@@ -9,8 +9,6 @@
 ./install-apt-packages experimental
 
 ./sync-root
-./backup-home
-./sync-home
 
 ./set-up-fstab
 ./install-xmonad-taffybar
@@ -40,7 +38,6 @@
 ./sudo apt-get update
 ./sudo apt-get dist-upgrade
 
-./sync-late
 ./upkeep
 
 ./install-apt-packages 9
