@@ -6,6 +6,7 @@
 
 ./set-up-apt
 ./install-apt-packages essential
+./install-apt-packages experimental
 
 ./sync-root
 ./backup-home
