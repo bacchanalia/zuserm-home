@@ -11,7 +11,6 @@ our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(setOpts);
 our @EXPORT = qw( run tryrun
                   shell tryshell
-                  runUser
                   runUser tryrunUser
                   proc procLines
                   getInstallPath
@@ -72,9 +71,11 @@ sub aptSrcInstall($$);
 
 
 my $opts = {
-  putCommand => 1,
-  runCommand => 1,
-  verbose    => 1,
+  putCommand     => 1,
+  runCommand     => 1,
+  verbose        => 1,
+  progressBar    => 1,
+  prependComment => 1,
   };
 
 sub setOpts($) {
@@ -102,7 +103,7 @@ sub runProtoIPC($$) {
         my $slave = $pty->slave;
         $pty->blocking(0);
         $slave->blocking(0);
-        my $h = IPC::Run::harness(["sh", "-c", "@cmd"], $slave, $pty);
+        my $h = IPC::Run::harness(["sh", "-c", "@cmd"], ">", $slave, $pty);
         if($dieOnError){
             $h->start;
         }else{
@@ -111,17 +112,19 @@ sub runProtoIPC($$) {
         }
         my $progFile = "/tmp/progress-bar-" . time . ".txt";
 
-        my $out;
         while($h->pumpable){
             eval { $h->pump_nb }; #eval because pumpable doesnt really work
-            $out = <$pty>;
-            if(defined $out and $opts->{verbose}){
-                $out = "# $out" if $opts->{putCommand};
+            my $out = <$pty>;
+            if(defined $out and $out ne ""){
+                if($opts->{progressBar} and $out =~ /(100|\d\d|\d)%/){
+                    open my $fh, "> $progFile";
+                    print $fh "$1\n";
+                    close $fh;
+                }
+                $out = "# $out" if $opts->{prependComment};
                 chomp $out;
-                system "echo $1 > $progFile" if $out =~ /(100|\d\d|\d)%/;
-                print "$out\n";
+                print "$out\n" if defined $opts->{verbose};
             }
-            print $out if defined $out;
             <$slave>;
         }
         IPC::Run::finish $h;
@@ -144,8 +147,8 @@ sub runProtoNoIPC($$) {
         } else {
             if($opts->{verbose}) {
                 while(my $line = <$fh>) {
-                    print "# " if $opts->{putCommand};
                     chomp $line;
+                    $line = "# $line" if $opts->{prependComment};
                     print "$line\n";
                 }
             }

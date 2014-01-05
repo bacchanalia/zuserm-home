@@ -1,20 +1,23 @@
 ./set-up-sudoers
 ./firmware-bootstrap
 
-./sync-root
-./backup-home
-./sync-home
 ./get-on-wifi
 ./remove-network-manager
 
 ./set-up-apt
 ./install-apt-packages essential
+./install-apt-packages experimental
+
+./sync-root
+./backup-home
+./sync-home
 
 ./set-up-fstab
 ./install-xmonad-taffybar
 ./install-tpbattstat
 ./set-up-autologin
 ./set-up-grub
+./set-up-systemd
 
 ./install-apt-packages [1-7]
 ./install-fcron
@@ -40,5 +43,4 @@
 ./sync-late
 ./upkeep
 
-./install-apt-packages tex
-
+./install-apt-packages 9
