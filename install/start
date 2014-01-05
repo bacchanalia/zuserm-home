@@ -1,14 +1,15 @@
 ./set-up-sudoers
 ./firmware-bootstrap
 
-./sync-root
-./backup-home
-./sync-home
 ./get-on-wifi
 ./remove-network-manager
 
 ./set-up-apt
 ./install-apt-packages essential
+
+./sync-root
+./backup-home
+./sync-home
 
 ./set-up-fstab
 ./install-xmonad-taffybar
