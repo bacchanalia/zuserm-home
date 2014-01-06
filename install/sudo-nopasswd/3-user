@@ -7,6 +7,8 @@
 /usr/local/bin/fan
 /usr/local/bin/fcronjob
 /usr/local/bin/fcronreset
+/usr/local/bin/fcron-start
+/usr/local/bin/fcron-ls
 /usr/local/bin/ipmagic
 /usr/local/bin/led
 /usr/local/bin/led-batt
