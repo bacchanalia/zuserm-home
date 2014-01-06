@@ -21,17 +21,16 @@ main = do
                 , stackWsTitle = False
                 , wsBorderColor = RGB (0x58/0xff, 0x6e/0xff, 0x75/0xff)
                 }
-              , sep, sep
               ]
       end = reverse
-          [ sep , sep
-          , W.monitorCpuW
+          [ W.monitorCpuW
           , W.monitorMemW
-          , W.progressBarW
+          -- , W.progressBarW
+          , W.fcrondynW
+          , sep
           , W.netStatsW
           , sep
           , W.netW
-          , sep
           , W.widthScreenWrapW 0.165972 =<< W.klompW
           , W.volumeW
           , W.micW
