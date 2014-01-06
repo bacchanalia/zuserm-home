@@ -28,7 +28,8 @@ au BufRead,BufNewFile *.hx set filetype=haxe
 au Syntax haxe source ~/.vim/haxe/haxe.vim
 
 hi TrailingWhitespace ctermbg=red guibg=red
-match TrailingWhitespace /\s\+$/
+autocmd CursorMoved  * match TrailingWhitespace /\%(\s\+\&\s*\%#\@!\)$/
+autocmd CursorMovedI * match TrailingWhitespace /\%(\s\+\&\s*\%#\@!\)$/
 
 """keep cursor vertically centered while searching"""
 nnoremap n nzz
