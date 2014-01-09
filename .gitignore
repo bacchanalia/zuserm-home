@@ -27,6 +27,7 @@ Videos
 .Skype/
 
 #passwords, security, keys, cookies
+.android
 .clips
 .esd_auth
 .gnupg/
@@ -78,6 +79,8 @@ fontconfig/
 .fontconfig/
 .fonts/
 .gem/
+.gnome
+.gnucash
 .icedtea/
 .lesshst
 .java/
