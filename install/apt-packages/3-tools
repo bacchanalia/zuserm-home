@@ -1,4 +1,5 @@
 acpi
+android-tools-adb
 aspell
 aspell-en
 atomicparsley
@@ -58,6 +59,7 @@ scrot
 shntool
 sqlite3
 testdisk
+time
 unetbootin
 vmpk
 vorbis-tools
