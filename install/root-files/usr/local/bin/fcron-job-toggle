@@ -1,0 +1,268 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $tab = "/etc/fcrontab";
+my $defJob = 'XX';
+
+sub getDefaultJobLine($$);
+sub parseJobTime($);
+sub appendJobLine($);
+sub listNamedJobs();
+sub setJobState($$$);
+sub readFcronLines();
+sub writeFcronLines($);
+sub modifyLine($$);
+sub ensureRoot();
+sub run(@);
+sub runUser(@);
+sub wrap($);
+
+my @commands = qw(on off toggle del);
+my $okCmds = join "|", @commands;
+
+my $jobRe = "^[a-zA-Z][a-zA-Z0-9]\$";
+
+my $h12Re = "(?:0?[0-9]|1[0-2])";
+my $h24Re = "(?:0?[0-9]|1[0-9]|2[0-4])";
+my $minRe = "(?:[0-5][0-9])";
+my $amRe = "(?:[aApP][mM])";
+my $absTimeRe = "^(?:$h24Re:$minRe|$h12Re:$minRe$amRe|$h12Re$amRe)\$";
+
+my $valUnitRe = "(?:[0-9]+[mwdhs])";
+my $relTimeRe = "^(?:[0-9]+|$valUnitRe+|$valUnitRe+[0-9]+)\$";
+
+my $usage = "Usage:
+  Update $tab programmatically and safely, and reload fcrontab.
+  Re-runs with sudo if not run as root.
+  After any job changes, 'fcron-tool --load' is called.
+  If SUDO_USER is set, also runs 'fcron-tool --get' as SUDO_USER.
+
+  $0 -h|--help
+    print this message
+
+  $0
+    list all named jobs
+
+  $0 JOBNAME [CMD]
+    modify or remove existing JOBNAME line
+      e.g.: '$0 UP on'  => ensure job 'UP' is uncommented
+            '$0 UP'     => toggle job 'UP'
+            '$0 x2 del' => completely remove job 'x2'
+
+    JOBNAME   one letter followed by one alphanumeric char {default='$defJob'}
+    CMD       $okCmds {default is 'toggle'}
+              on:     ensure uncommented
+              off:    ensure commented
+              toggle: toggle comment
+              del:    completed remove JOBNAME line, even if commented
+
+  $0 [JOBNAME] HH24:MM|HH12:MMa|HH12a
+    add a new job to go off once at a certain time of day
+      e.g.: '$0 14:45'   => '" . getDefaultJobLine($defJob, '14:45') . "'
+            '$0 5pm'     => '" . getDefaultJobLine($defJob, '5pm') . "'
+            '$0 12:30am' => '" . getDefaultJobLine($defJob, '12:30am') . "'
+
+    JOBNAME   one letter followed by one alphanumeric char {default='$defJob'}
+    HH24:MM   wallclock time in hours 00-23 and minutes 00-59
+    HH12:MMa  wallclock time in hours 1-12 and minutes 00-59 and AM or PM
+    HH12a     wallclock time in hours 1-12 and AM or PM
+
+  $0 [JOBNAME] RELTIME
+    add a new job to go off after a specified delay
+    {JOBNAME defaults to '$defJob'}
+      e.g.: '$0 30s'   => '" . getDefaultJobLine($defJob, '30s') . "'
+            '$0 5'     => '" . getDefaultJobLine($defJob, '5') . "'
+            '$0 3w5d'  => '" . getDefaultJobLine($defJob, '3w5d') . "'
+
+    JOBNAME   one letter followed by one alphanumeric char {default='$defJob'}
+    RELTIME   elapsed system time
+              '<MINUTES>' or '<VAL-UNIT>+' or '<VAL-UNIT>+<MINUTES>'
+
+              MINUTES is an integer for elapsed minutes
+              VAL-UNIT is an integer followed by a unit:
+                m:    months  (4 weeks)
+                w:    weeks   (7 days)
+                d:    days    (24 hours)
+                h:    hours   (60 minutes)
+                s:    seconds
+
+              at least one VAL-UNIT, or MINUTES, or both must be specified
+              MINUTES, if specified, must be last, and at most once
+
+            e.g.:
+              5           => 5 minutes
+              10s         => 10 seconds
+              2h5s2h40s10 => 4hr, 10min and 45s
+";
+
+sub main(@){
+  die $usage if @_ > 0 and $_[0] =~ /^(-h|--help)$/;
+  ensureRoot();
+
+  if(@_ == 0){
+    listNamedJobs;
+    exit 0;
+  }
+
+  die $usage if @_ > 2;
+
+  if($_[0] =~ /$jobRe/ and (@_ < 2 or $_[1] =~ /^($okCmds)/)){
+    my $jobName = $_[0];
+    my $cmd = @_ < 2 ? 'toggle' : $_[1];
+    setJobState $jobName, $cmd, 0;
+  }elsif($_[-1] =~ /$absTimeRe/ and (@_ < 2 or $_[0] =~ /$jobRe/)){
+    my $jobName = @_ < 2 ? $defJob : $_[0];
+    my $absTime = $_[-1];
+    setJobState $jobName, 'del', 1;
+    appendJobLine getDefaultJobLine($jobName, $absTime);
+  }elsif($_[-1] =~ /$relTimeRe/ and (@_ < 2 or $_[0] =~ /$jobRe/)){
+    my $jobName = @_ < 2 ? $defJob : $_[0];
+    my $relTime = $_[-1];
+    setJobState $jobName, 'del', 1;
+    appendJobLine getDefaultJobLine($jobName, $relTime);
+  }else{
+    die $usage;
+  }
+
+  system "fcron-tool", "--load";
+  runUser "fcron-tool", "--get";
+}
+
+sub getDefaultJobLine($$){
+  my ($jobName, $time) = @_;
+  my $jobTime = parseJobTime $time;
+  my $cmd = "alarm-fcron $jobName del";
+  return "$jobTime $cmd #$jobName";
+}
+sub parseJobTime($){
+  my $time = shift;
+  if($time =~ /$absTimeRe/){
+    my ($h, $m, $am);
+    if($time =~ /^($h24Re):($minRe)$/){
+      ($h, $m, $am) = ($1, $2, undef);
+    }elsif($time =~ /^($h12Re):($minRe)($amRe)$/){
+      ($h, $m, $am) = ($1, $2, $3);
+    }elsif($time =~ /^($h12Re)($amRe)$/){
+      ($h, $m, $am) = ($1, 0, $2);
+    }
+    if(defined $am){
+      $h %= 12;
+      $h += 12 if lc $am eq "pm";
+    }
+    return "$m $h * * *";
+  }elsif($time =~ /$relTimeRe/){
+    return "@ $time";
+  }else{
+    die "malformed time: $time\n";
+  }
+}
+sub appendJobLine($){
+  my $line = shift;
+  chomp $line;
+  $line .= "\n";
+  print "appending:\n$line";
+  my @lines = (readFcronLines(), $line);
+  writeFcronLines \@lines;
+}
+
+sub setJobState($$$){
+  my $jobName = shift;
+  my $state = shift;
+  my $force = shift;
+
+  my $modified = 0;
+  my @lines = readFcronLines();
+  for my $line(@lines){
+    if($line =~ /^\s*(?!##).*#$jobName\s*$/){
+      $line = modifyLine $line, $state;
+      $modified = 1;
+      last if not $force;
+    }
+  }
+  if($modified){
+    writeFcronLines(\@lines);
+  }else{
+    die "Job $jobName not found\n" if not $force;
+  }
+}
+
+sub listNamedJobs(){
+  my(@active, @inactive);
+  for my $line(readFcronLines){
+    if($line =~ /^\s*(?!##).*#([0-9A-Za-z]{2})$/){
+      my $name = $1;
+      if($line =~ /^\s*#[^#]/){
+        push @inactive, "$name => $line";
+      }else{
+        push @active, "$name => $line";
+      }
+    }
+  }
+  print @active;
+  print "\ninactive:\n  " . join "  ", @inactive;
+}
+
+sub readFcronLines(){
+  open FH, "< $tab" or die "Could not read $tab\n";
+  my @lines = <FH>;
+  close FH;
+  return @lines;
+}
+sub writeFcronLines($){
+  my @lines = @{shift()};
+  open FH, "> $tab" or die "Could not write $tab\n";
+  print FH @lines;
+  close FH;
+}
+
+sub modifyLine($$){
+  my $line = shift;
+  my $state = shift;
+
+  print "OLD: $line";
+  if($state eq 'del'){
+    $line = '';
+    print "<deleted>\n";
+  }else{
+    my $commented = ($line =~ s/^\s*#([^#])/$1/);
+    if($state eq 'off' or ($state eq 'toggle' and not $commented)){
+      $line = "#$line";
+    }
+    print "NEW: $line";
+  }
+  return $line;
+}
+
+sub ensureRoot(){
+  if(`whoami` ne "root\n"){
+    print "rerunning as root\n";
+    exec "sudo", $0, @ARGV;
+  }
+}
+
+sub run(@){
+  print "@_\n";
+  system @_;
+  die "Error running @_\n" if $? != 0;
+}
+sub runUser(@){
+  if(`whoami` eq "root\n"){
+    if(defined $ENV{SUDO_USER}){
+      my @args = map {wrap $_} @_;
+      print "run as root, rerunning as $ENV{SUDO_USER}\n";
+      run "su", $ENV{SUDO_USER}, "sh", "-c", "@args";
+    }else{
+      die "Error: should not run '@_' as root\n";
+    }
+  }else{
+    run @_;
+  }
+}
+sub wrap($){
+  my $s = shift;
+  $s =~ s/"/\\"/g;
+  return $s;
+}
+
+&main(@ARGV);
