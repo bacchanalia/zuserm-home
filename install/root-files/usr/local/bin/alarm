@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use Getopt::Long qw(GetOptionsFromArray :config bundling);
+use Cwd 'abs_path';
 
 my $alarmsDir = '/usr/share/alarms';
 die "$alarmsDir/ doesnt exist or isnt a dir\n" if not -d $alarmsDir;
@@ -17,28 +18,44 @@ my $usage = "Usage:
       -n|--norerun    Do not rerun as pulse user
       -o|--once       Do not repeat alarm {don't pass '-loop 0' to mplayer}
       -g|--guess      If alarm does not match, use 'default' instead of failing
+      -v N|--vol=N    Attempt to unmute and set volume to N % using pulse-vol
 ";
 
 sub pulseExec(@);
 
 sub main(@){
-  my ($help, $norerun, $once, $guess);
+  my ($help, $norerun, $once, $guess, $vol);
   my $ok = GetOptionsFromArray(\@_,
     "h|help"       => \$help,
     "n|norerun"    => \$norerun,
     "o|once"       => \$once,
     "g|guess"      => \$guess,
+    "v|vol=i"      => \$vol,
   );
+
   my $name = shift() || 'default';
   if(defined $guess and $name !~ /^($validAlarms)$/){
     print "using 'default' instead of '$name'\n";
     $name = 'default';
   }
 
-  die $usage
-    if not $ok or defined $help or @_ > 0 or $name !~ /^($validAlarms)$/;
+  die $usage if not $ok or @_ > 0
+    or defined $help
+    or $name !~ /^($validAlarms)$/
+    or (defined $vol and $vol < 0)
+    ;
 
-  pulseExec $0, "-n", $name unless defined $norerun;
+  pulseExec $0, @ARGV unless defined $norerun;
+
+  my $alarmFile = "$alarmsDir/$name";
+  $alarmFile = abs_path $alarmFile if -l $alarmFile;
+  die "Missing alarm file $alarmFile\n" if not -e $alarmFile;
+
+  if(defined $vol){
+    system "pulse-vol", "unmute";
+    system "pulse-vol", $vol;
+  }
+
   my @cmd = ("term", "mplayer", "$alarmsDir/$name");
   @cmd = (@cmd, "-loop", "0") unless $once;
   exec @cmd;
