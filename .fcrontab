@@ -3,8 +3,8 @@
 !runas(zuserm)
 PATH=/home/zuserm/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
 
-#@ 4 alarm -v 80 co ; fcron-job-toggle co #co
-#@ 3 alarm -v 80 te ; fcron-job-toggle te #te
+#@ 4 alarm -ov 80 co ; fcron-job-toggle co #co
+#@ 3 alarm -ov 80 te ; fcron-job-toggle te #te
 
-#30 7 * * * alarm -v 80 lba  ; fcron-job-toggle m0 #m0
-#40 7 * * * alarm -v 80 dont ; fcron-job-toggle m1" #m1
+#30 7 * * * alarm -ov 80 lba  ; fcron-job-toggle m0 #m0
+#40 7 * * * alarm -ov 80 dont ; fcron-job-toggle m1 #m1
