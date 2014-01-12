@@ -1,0 +1,2 @@
+# shift tab
+"\e[Z": menu-complete
