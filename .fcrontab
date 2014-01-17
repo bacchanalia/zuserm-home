@@ -8,3 +8,7 @@ PATH=/home/zuserm/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sb
 
 #30 7 * * * alarm -ov 80 lba  ; fcron-job-toggle m0 #m0
 #40 7 * * * alarm -ov 80 dont ; fcron-job-toggle m1 #m1
+
+30 5 * * * term 'sudo snapshot /home DAILY; read'
+@hourly  sudo snapshot /home HOURLY
+@ 5      sudo snapshot /home FIVEMIN
