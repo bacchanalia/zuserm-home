@@ -10,5 +10,6 @@ pulseaudio --start &
 sudo bluetooth off &
 sudo fan auto &
 taffybar &
+parcellite -d &
 
 exec xmonad
