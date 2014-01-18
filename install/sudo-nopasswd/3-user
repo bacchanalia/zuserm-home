@@ -1,4 +1,5 @@
 /usr/local/bin/acpi-call
+/usr/local/bin/backup
 /usr/local/bin/bluetooth
 /usr/local/bin/build-acpi-call
 /usr/local/bin/cpu-set
@@ -11,4 +12,3 @@
 /usr/local/bin/led-batt
 /usr/local/bin/mnt
 /usr/local/bin/screenpwr
-/usr/local/bin/snapshot
