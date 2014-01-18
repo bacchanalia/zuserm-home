@@ -1,0 +1,254 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Time::HiRes qw(time);
+
+my $mntDir = "/media";
+
+my $backups = {
+  "home" => ["/home" => "BACKUP_HOME"],
+  "stuff" => ["/media/stuff" => "BACKUP_STUFF"],
+};
+my $firstName = (sort keys %$backups)[0];
+my ($firstSrc, $firstMnt) = @{$$backups{$firstName}};
+my $okNames = join "|", sort keys %$backups;
+
+sub mountAndBackup($$);
+sub backup($$);
+sub getSyncedSnapshot($$);
+sub makeSnapshot($$);
+sub getSnapshots($$);
+sub getLastSnapshot($$);
+sub cleanupSnapshots($$$);
+sub getBtrfsMountDev($);
+
+sub run(@);
+sub ensureRoot();
+
+my $usage = "Usage:
+  $0 -h|--help
+    Print this message
+
+  $0 [$okNames]
+    Perform backup specified {default is to perform all}
+    -use specified SRC {e.g.: '$firstSrc' for '$firstName'}
+    -use specified DEST {e.g.: '$mntDir/$firstMnt' for '$firstName'}
+    -use mnt to (re)mount DEST
+    -find the last sync-ed snapshot in SRC and DEST
+    -make a new snapshot in SRC
+    -send the difference between the old SRC and new SRC to DEST
+    -use mnt to unmount DEST
+
+  $0 SRC DEST
+    Perform an incremental backup between two btrfs filesystems
+    -find the last agreed upon snapshot in SRC and DEST
+    -make a new snapshot in SRC
+    -send the difference between the old SRC and new SRC to DEST
+
+  $0 --snapshot MOUNT_POINT [PREFIX]
+    make a read-only snapshot of MOUNT_POINT named PREFIX-YYYY-MM-DD_MILLIS
+    PREFIX defaults to \"SNAPSHOT\", and cannot be \"BACKUP\"
+
+  $0 --cleanup=INSTANCES MOUNT_POINT PREFIX
+    remove snapshots named PREFIX-*, leaving the last INSTANCES.
+    INSTANCES is a positive integer.
+";
+
+sub main(@){
+  die $usage if @_ > 0 and $_[0] =~ /^(-h|--help)$/;
+  ensureRoot();
+
+  if(@_ == 0 or (@_ == 1 and $_[0] =~ /^($okNames)$/)){
+    my $name = shift;
+    for my $backupName(sort keys $backups){
+      next unless not defined $name or $name eq $backupName;
+      my ($srcDir, $mntName) = @{$$backups{$backupName}};
+      mountAndBackup $srcDir, $mntName;
+      print "\n\n";
+    }
+  }elsif((@_ == 2 or @_ == 3) and $_[0] =~ /^--snapshot$/){
+    shift;
+    my ($mountPoint, $prefix) = @_;
+    $prefix = "SNAPSHOT" if not defined $prefix;
+    $mountPoint =~ s/\/$//;
+    die "not a dir: $mountPoint\n" if not -d $mountPoint;
+
+    die "prefix must be a word i.e.: /\\w+/: $prefix\n" if $prefix !~ /^\w+$/;
+    die "PREFIX cannot be 'BACKUP'\n" if $prefix eq "BACKUP";
+
+    die $usage if not defined $mountPoint or @_ > 2;
+    makeSnapshot $mountPoint, $prefix;
+  }elsif(@_ == 3 and $_[0] =~ /^--cleanup=(\d+)$/){
+    my ($mountPoint, $prefix, $instances) = ($_[1], $_[2], $1);
+    die "INSTANCES must be > 0\n" if $instances <= 0;
+    cleanupSnapshots $mountPoint, $prefix, $instances;
+  }elsif(@_ == 2){
+    my ($srcDir, $destDir) = @_;
+    backup $srcDir, $destDir;
+  }else{
+    die $usage;
+  }
+}
+
+sub mountAndBackup($$){
+  my ($srcDir, $mntName) = @_;
+  my $destDir = "$mntDir/$mntName";
+
+  die "dir not found: $srcDir\n" if not -d $srcDir;
+
+  run "mnt", "-u", $mntName if -e $destDir;
+  die "$destDir exists already\n" if -e $destDir;
+
+  run "mnt", "-l", $mntName;
+
+  backup $srcDir, $destDir;
+
+  run "mnt", "-u", $mntName;
+}
+
+sub backup($$){
+  my ($srcDir, $destDir) = @_;
+  $srcDir =~ s/\/$//;
+  $destDir =~ s/\/$//;
+
+  die "$srcDir is not btrfs\n" if not defined getBtrfsMountDev $srcDir;
+  die "$destDir is not btrfs\n" if not defined getBtrfsMountDev $destDir;
+
+  my $syncedSnapshot = getSyncedSnapshot $srcDir, $destDir;
+
+  my $newSnapshot = makeSnapshot $srcDir, "BACKUP";
+  run "sync";
+  if(-e "$destDir/$newSnapshot"){
+    die "snapshot exists on dest already: $destDir/$newSnapshot\n";
+  }
+
+  run "btrfs send"
+    . " -p \"$srcDir/$syncedSnapshot\""
+    . " \"$srcDir/$newSnapshot\""
+    . " | "
+    . " btrfs receive \"$destDir\""
+    ;
+
+  if(not -d "$destDir/$newSnapshot"){
+    die "snapshot send/receive failed: $destDir/$newSnapshot\n";
+  }
+
+  if(-l "$destDir/backup"){
+    run "rm", "$destDir/backup";
+  }
+
+  if(not -e "$destDir/backup"){
+    run "ln", "-s", $newSnapshot, "$destDir/backup";
+  }else{
+    print STDERR "$destDir/backup exists, not creating symlink\n";
+  }
+}
+
+sub getSyncedSnapshot($$){
+  my ($srcDir, $destDir) = @_;
+  $srcDir =~ s/\/$//;
+  $destDir =~ s/\/$//;
+  die "not a dir: $srcDir\n" if not -d $srcDir;
+  die "not a dir: $destDir\n" if not -d $destDir;
+
+  my $lastSrc = getLastSnapshot $srcDir, "BACKUP";
+  my $lastDest = getLastSnapshot $destDir, "BACKUP";
+  if($lastSrc ne $lastDest){
+    die "Mismatched last snapshot:\n$srcDir/$lastSrc\n$destDir/$lastDest\n";
+  }
+  return $lastSrc;
+}
+
+sub makeSnapshot($$){
+  my ($mountPoint, $prefix) = @_;
+  my $millis = int(time * 1000);
+  my $date = `date +%F`;
+  chomp $date;
+
+  my $snapshot = "$prefix-${date}_${millis}";
+  my $snapshotDir = "$mountPoint/$snapshot";
+
+  die "$snapshotDir already exists!\n" if -e $snapshotDir;
+  run "btrfs", "subvolume", "snapshot", "-r", $mountPoint, $snapshotDir;
+
+  if($snapshot ne getLastSnapshot $mountPoint, $prefix){
+    die "snapshot failed\n";
+  }
+
+  return $snapshot;
+}
+
+sub getSnapshots($$){
+  my ($dir, $prefix) = @_;
+  my @subs = `btrfs subvolume list "$dir"`;
+  chomp foreach @subs;
+  @subs = grep {/^ID \d+/} @subs;
+  s/^ID \d+ gen \d+ top level \d+ path // foreach @subs;
+  @subs = grep {/^$prefix-\d\d\d\d-\d\d-\d\d_\d+$/} @subs;
+
+  my @sortedSubs = sort @subs;
+  for(my $i=0; $i<@subs; $i++){
+    if($subs[$i] ne $sortedSubs[$i]){
+      die "snapshots are out of order\n";
+    }
+  }
+
+  for my $sub(@subs){
+    die "$dir/$sub is not a dir\n" if not -d "$dir/$sub";
+  }
+
+  return @subs;
+}
+
+sub getLastSnapshot($$){
+  my ($dir, $prefix) = @_;
+  my @subs = getSnapshots $dir, $prefix;
+  die "no snapshot found for $dir\n" if @subs == 0;
+  my $sub = $subs[-1];
+  return $sub;
+}
+
+sub cleanupSnapshots($$$){
+  my ($mountPoint, $prefix, $instances) = @_;
+  my @subs = getSnapshots $mountPoint, $prefix;
+  @subs = reverse sort @subs;
+  my @toKeep = grep {defined} reverse @subs[0 .. $instances-1];
+  my @toDelete = grep {defined} reverse @subs[$instances .. $#subs];
+  print "to keep (" . scalar(@toKeep) . "):\n ";
+  print join "\n ", @toKeep;
+  print "\n\n";
+  print "to delete (" . scalar(@toDelete) . "):\n ";
+  print join "\n ", @toDelete;
+  print "\n\n";
+  die "ERROR: no snapshots would remain\n" if @toKeep == 0;
+  if(@toDelete > 0){
+    my @delSubvolumePaths = map {"$mountPoint/$_"} @toDelete;
+    run "btrfs", "subvolume", "delete", @delSubvolumePaths;
+  }
+  print "deleted " . scalar(@toDelete) . " subvolumes\n";
+}
+
+sub getBtrfsMountDev($){
+  my $dir = shift;
+  for my $line(`mount`){
+    if($line =~ m/^([_a-zA-Z0-9\/\-]+) on $dir type btrfs /){
+      return $1;
+    }
+  }
+  return undef;
+}
+
+sub ensureRoot(){
+  if(`whoami` ne "root\n"){
+    print "rerunning as root\n";
+    exec "sudo", $0, @ARGV;
+  }
+}
+
+sub run(@){
+  print "@_\n";
+  system @_;
+  die "FAILED: @_\n" if $? != 0;
+}
+
+&main(@ARGV);

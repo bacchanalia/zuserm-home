@@ -15,7 +15,7 @@ our @EXPORT = qw( getScriptNames getSubNames
                   runUser tryrunUser
                   proc procLines
                   runScript
-                  getInstallPath
+                  getHome getInstallPath getSrcCache
                   cd chownUser
                   symlinkFile
                   which
@@ -248,8 +248,20 @@ sub getUsername() {
     $user
 }
 
+sub getHome() {
+    if(not isRoot()) {
+        return $ENV{HOME};
+    }else {
+        return "/home/" . getUsername();
+    }
+}
+
 sub getInstallPath($) {
-    return "$ENV{HOME}/install/$_[0]";
+    return getHome() . "/install/$_[0]";
+}
+
+sub getSrcCache() {
+    return getHome() . "/.src-cache";
 }
 
 sub which($) {
@@ -576,16 +588,17 @@ sub installFromDir($;$$) {
 sub installFromGit($;$) {
     my ($gitUrl, $cmd) = (@_, undef);
     my $repo = $1 if $gitUrl =~ /\/([^\/]*?)(\.git)?$/;
-    my $srcCacheDir = "$ENV{HOME}/.src-cache";
-    installFromDir "$ENV{HOME}/.src-cache/$repo", $gitUrl, $cmd;
+    my $srcCache = getSrcCache();
+    installFromDir "$srcCache/$repo", $gitUrl, $cmd;
 }
 
 sub aptSrcInstall($$) {
     my ($package, $whichdeb) = @_;
     shell "sudo apt-get -y build-dep $package";
-    my $srcdir = "$ENV{HOME}/.src-cache/$package";
-    shell "mkdir $srcdir" unless -d $srcdir;
-    cd $srcdir;
+    my $srcCache = getSrcCache();
+    my $pkgSrcDir = "$srcCache/.src-cache/$package";
+    shell "mkdir -p $pkgSrcDir" unless -d $pkgSrcDir;
+    cd $pkgSrcDir;
     shell "apt-get -b source $package";
     for my $file (split "\n", `ls -1`) {
         if($file =~ /\.deb$/ && $file =~ /$whichdeb/) {
