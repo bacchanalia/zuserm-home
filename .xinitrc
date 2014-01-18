@@ -1,8 +1,6 @@
 sudo net-mon stop
 sudo wauto &
 
-sudo mnt --other -m Charybdis
-
 ~/.xconfig
 (sleep 10; xconfig) &
 
