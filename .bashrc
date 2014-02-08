@@ -70,6 +70,7 @@ alias ulk='sudo chown -R zuserm:zuserm'
 alias printers='sudo system-config-printer'
 alias evi='spawn evince'
 alias snapshot='backup --snapshot'
+alias qgroups-info='backup --info --quick --sort-by=size'
 
 alias :l='ghci'
 alias :h='man'
