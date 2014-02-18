@@ -54,6 +54,7 @@ wvdial.conf
 .gksu.lock
 
 #logs, history, caches
+escapepod/
 .local/
 .cache/
 fontconfig/
