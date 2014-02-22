@@ -54,6 +54,7 @@ wvdial.conf
 .gksu.lock
 
 #logs, history, caches
+escapepod/*-cache
 .local/
 .cache/
 fontconfig/
@@ -71,6 +72,7 @@ fontconfig/
 .audacity-data/
 .cabal/
 .config/*
+!.config/ipmagic/
 !.config/taffybar/taffybar.hs
 !.config/taffybar/lib/
 !.config/tpbattstat.conf
