@@ -69,6 +69,8 @@ alias lk='sudo chown -R root:root'
 alias ulk='sudo chown -R zuserm:zuserm'
 alias printers='sudo system-config-printer'
 alias evi='spawn evince'
+alias time='command time'
+alias mkdir='mkdir -p'
 
 alias :l='ghci'
 alias :h='man'
