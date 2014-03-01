@@ -5,5 +5,8 @@ fs=yes
 #channels=6
 
 #kernel fix
-#vo=x11
-#zoom=yes
+vo=x11
+zoom=yes
+
+alang=jp
+slang=en

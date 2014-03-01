@@ -71,6 +71,8 @@ alias printers='sudo system-config-printer'
 alias evi='spawn evince'
 alias time='command time'
 alias mkdir='mkdir -p'
+alias snapshot='backup --snapshot'
+alias qgroups-info='backup --info --quick --sort-by=size'
 
 alias :l='ghci'
 alias :h='man'

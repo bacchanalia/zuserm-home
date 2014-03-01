@@ -1,12 +1,55 @@
-#!/bin/bash
-DIR=$HOME/install/printers
-test -x initctl && sudo initctl start cups
-test -x /etc/init.d/cups && sudo /etc/init.d/cups start
-sudo rm -rf /etc/cups/printers.conf
-sudo rm -rf /etc/cups/ppd/*
-sudo cp $DIR/printers.conf /etc/cups/printers.conf
-sudo cp $DIR/ppd/* /etc/cups/ppd/
-sudo chown root.lp /etc/cups/printers.conf
-sudo chown root.root /etc/cups/ppd/*
-test -x initctl && sudo initctl stop cups
-test -x /etc/init.d/cups && sudo /etc/init.d/cups start
+#!/usr/bin/perl
+use strict;
+use warnings;
+use lib `dirname $0 | tr -d '\n'`;
+use ScriptScript;
+
+sub cupsService($);
+
+my $printersDir = getInstallPath "printers";
+my $cupsDir = "/etc/cups";
+my $ppdDir = "$cupsDir/ppd";
+
+my $usage = "Usage:
+  $0
+    set printers info from $printersDir => $cupsDir
+  $0 -g
+    copy printers info from $cupsDir => $printersDir
+";
+
+sub main(@) {
+    getRoot(@_);
+
+    my $get = 0;
+    if(@_ == 1 and $_[0] =~ /^(-g)$/){
+        run "mkdir", "-p", "$printersDir/ppd";
+        run "cp", "$cupsDir/printers.conf", "$printersDir";
+        shell "cp $cupsDir/ppd/* $printersDir/ppd";
+        run "chown", "-R", getUsername() . ".", $printersDir;
+        exit;
+    }
+    die $usage if @_ != 0;
+
+    cupsService 'stop';
+
+    run "cp", "$printersDir/printers.conf", $cupsDir;
+
+    run "rm", "-rf", $ppdDir;
+    run "cp", "-ar", "$printersDir/ppd/", $ppdDir;
+
+    run "chown", "root.lp", "$cupsDir/printers.conf", $ppdDir;
+    shell "chown root.root $ppdDir/*";
+
+    cupsService 'start';
+}
+
+sub cupsService($){
+    my $cmd = shift;
+    if(tryrun "test", "-x", "initctl"){
+        tryrun "initctl", $cmd, "cups";
+    }elsif(-x "/etc/init.d/cups"){
+        tryrun "/etc/init.d/cups", $cmd;
+    }
+}
+
+&main(@ARGV);

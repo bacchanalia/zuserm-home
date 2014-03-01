@@ -19,15 +19,26 @@ sub mountAndBackup($$);
 sub backup($$);
 sub getSyncedSnapshot($$);
 sub makeSnapshot($$);
+sub getSubvolumes($);
+sub getSubvolumePaths($);
+sub getSubvolumeQuotaInfo($);
+sub formatSubvolumeQuotaInfo($$$);
+sub isQuotaEnabled($);
 sub getSnapshots($$);
 sub getLastSnapshot($$);
 sub cleanupSnapshots($$$);
+sub deleteSnapshots($@);
 sub getBtrfsMountDev($);
+sub monitorPvLog();
+sub latestPvLogFile();
 
 sub sync();
 sub run(@);
 sub tryrun(@);
 sub ensureRoot();
+
+my $okSortBy = join "|", qw(id path size);
+my $defaultSortBy = 'size';
 
 my $usage = "Usage:
   $0 -h|--help
@@ -55,7 +66,7 @@ my $usage = "Usage:
 
   $0 --cleanup=INSTANCES MOUNT_POINT PREFIX
     remove snapshots named PREFIX-*, leaving the last INSTANCES.
-    INSTANCES is a positive integer.
+    INSTANCES is a positive integer or 'all'
 
   $0 --remove
     for each MOUNTPOINT in (" . join(", ", @mntPoints) . "), run:
@@ -63,6 +74,23 @@ my $usage = "Usage:
     for each MOUNTNAME in (" . join(", ", @backupMntNames) . "), run:
       mnt -m MOUNTNAME
       $0 --cleanup=1 /media/MOUNTNAME \"BACKUP\"
+
+  $0 --delete MOUNT_POINT SUBVOLUME_NAME [SUBVOLUME_NAME...]
+    similar to:
+    'cd MOUNT_POINT; btrfs subvol delete SUBVOLUME_NAME SUBVOLUME_NAME ..'
+    also cleans up qgroups if quota is enabled
+
+  $0 --monitor
+    tail the latest pv log, switching to the latest when a new one is created
+
+  $0 --info [--quick] [--sort-by=[$okSortBy] MOUNTPOINT
+    show all subvolumes and data usage
+    if --quick is not specified, (re-)enable quotas and rescan first
+    --sort-by is the sort order of the subvols (default is $defaultSortBy)
+      id:   subvol id, smallest first
+      path: subvol path, lexicographically
+      size: bytes used exclusively by subvol, largest first
+
 ";
 
 sub main(@){
@@ -90,10 +118,14 @@ sub main(@){
     die $usage if not defined $mountPoint or @_ > 2;
     makeSnapshot $mountPoint, $prefix;
     sync();
-  }elsif(@_ == 3 and $_[0] =~ /^--cleanup=(\d+)$/){
+  }elsif(@_ == 3 and $_[0] =~ /^--cleanup=(\d+|all)$/){
     my ($mountPoint, $prefix, $instances) = ($_[1], $_[2], $1);
-    die "INSTANCES must be > 0\n" if $instances <= 0;
+    die "INSTANCES must be > 0\n" if $instances ne 'all' and $instances <= 0;
     cleanupSnapshots $mountPoint, $prefix, $instances;
+  }elsif(@_ >= 3 and $_[0] =~ /^--delete$/){
+    my $mountPoint = $_[1];
+    my @toDelete = @_[2..$#_];
+    deleteSnapshots $mountPoint, @toDelete;
   }elsif(@_ == 1 and $_[0] =~ /^--remove$/){
     for my $name(keys %$backups){
       my ($srcMntPoint, $destMntName) = @{$$backups{$name}};
@@ -109,6 +141,42 @@ sub main(@){
       }
       run "mnt", "-u", $destMntName;
     }
+  }elsif(@_ == 1 and $_[0] =~ /^--monitor$/){
+    monitorPvLog();
+  }elsif(@_ >= 2 and $_[0] =~ /^--info$/){
+    shift;
+    my $quick = 0;
+    if($_[0] =~ /^(--quick)$/){
+      $quick = 1;
+      shift;
+    }
+
+    my $sortBy = $defaultSortBy;
+    if($_[0] =~ /^--sort-by=($okSortBy)$/){
+      $sortBy = $1;
+      shift;
+    }
+
+    my $mnt = shift;
+    die $usage if not defined $mnt or @_ > 0;
+
+    my $fsSize = `df -B1 --output=size "$mnt" | tail -1`;
+    chomp $fsSize;
+    die "could not df $mnt\n" if $fsSize !~ /^\d+$/ or $fsSize == 0;
+
+    if(not $quick){
+      print "(re-)enabling quota and rescanning:\n";
+      run "btrfs quota disable \"$mnt\"";
+      run "btrfs quota enable \"$mnt\"";
+      run "btrfs quota rescan -w \"$mnt\"";
+    }
+    if(not isQuotaEnabled($mnt)){
+      die "quota is not enabled\n";
+    }
+
+    my $info = getSubvolumeQuotaInfo $mnt;
+
+    print formatSubvolumeQuotaInfo($fsSize, $info, $sortBy);
   }elsif(@_ == 2){
     my ($srcDir, $destDir) = @_;
     backup $srcDir, $destDir;
@@ -221,18 +289,122 @@ sub makeSnapshot($$){
   return $snapshot;
 }
 
+sub getSubvolumes($){
+  my $mnt = shift;
+  my @subLines = `btrfs subvolume list "$mnt"`;
+  my $subs = {};
+  for my $subLine(@subLines){
+    if($subLine =~ /ID (\d+) gen (\d+) top level (\d+) path (.*)$/){
+      my ($id, $gen, $level, $path) = ($1, $2, $3, $4);
+      $$subs{$id} = $path;
+    }else{
+      die "misformatted subvolume line: $subLine\n";
+    }
+  }
+  return $subs;
+}
+sub getSubvolumePaths($){
+  my $mnt = shift;
+  my $subs = getSubvolumes($mnt);
+  my $paths = [];
+  for my $id(sort {$a <=> $b} keys %$subs){
+    push @$paths, $$subs{$id};
+  }
+  return $paths;
+}
+
+sub getSubvolumeQuotaInfo($){
+  my $mnt = shift;
+  my @qgroupLines = `btrfs qgroup show \"$mnt\"`;
+  die "invalid output from qgroup show on $mnt" if 0
+    or @qgroupLines < 3
+    or $qgroupLines[0] !~ /^\s*qgroupid\s*rfer\s*excl\s*$/
+    or $qgroupLines[1] !~ /^\s*-+\s*-+\s*-+\s*$/
+    ;
+  shift @qgroupLines;
+  shift @qgroupLines;
+
+  my $subs = getSubvolumes($mnt);
+  my $root = undef;
+
+  my $info = {};
+  for my $qgroup(@qgroupLines){
+    if($qgroup !~ /^\s*0\/(\d+)\s*(\d+)\s*(\d+)/){
+      die "Malformed qgroup: $qgroup\n";
+    }
+    my($subId, $total, $excl) = ($1, $2, $3);
+    if(not defined $root and not defined $$subs{$subId}){
+      $root = $subId;
+      $$subs{$subId} = "root";
+    }
+
+    if(not defined $$subs{$subId}){
+      print STDERR "WARNING: unknown subvolume $subId\n";
+      next;
+    }
+    die "duplicated subvolume: $subId\n" if defined $$info{$subId};
+
+    $$info{$subId} = {
+      path  => $$subs{$subId},
+      total => $total,
+      excl  => $excl,
+    };
+  }
+
+  for my $subId(sort keys %$subs){
+    if(not defined $$info{$subId}){
+      print STDERR "WARNING: missing qgroup for $subId {maybe deleted?)\n";
+    }
+  }
+
+  return $info;
+}
+
+sub formatSubvolumeQuotaInfo($$$){
+  my ($fsSize, $info, $sortBy) = @_;
+  my $s = '';
+
+  my $sortFcts = {
+    id   => sub($$){$_[0] <=> $_[1]},
+    size => sub($$){$$info{$_[1]}{excl} <=> $$info{$_[0]}{excl}},
+    path => sub($$){$$info{$_[0]}{path} cmp $$info{$_[1]}{path}},
+  };
+
+  my $sortFct = $$sortFcts{$sortBy};
+  die "unknown sort function: $sortBy\n" if not defined $sortFct;
+
+  for my $subId(sort $sortFct (keys %$info)){
+    my $path = $$info{$subId}{path};
+    $path = sprintf '%-32s', $path;
+
+    my $size = $$info{$subId}{excl};
+    $size /= 1024;
+    $size = sprintf '%10d', $size;
+
+    my $pct = 100 * ($$info{$subId}{excl} / $fsSize);
+    $pct = sprintf '%7.3f', $pct;
+
+    $s .= "$path ${size}KiB $pct\%\n";
+  }
+
+  return $s;
+}
+
+sub isQuotaEnabled($){
+  my $mnt = shift;
+  system "btrfs qgroup show \"$mnt\" >/dev/null 2>/dev/null";
+  return $? == 0;
+}
+
 sub getSnapshots($$){
   my ($dir, $prefix) = @_;
-  my @subs = `btrfs subvolume list "$dir"`;
-  chomp foreach @subs;
-  @subs = grep {/^ID \d+/} @subs;
-  s/^ID \d+ gen \d+ top level \d+ path // foreach @subs;
+  my @subs = @{getSubvolumePaths($dir)};
   @subs = grep {/^$prefix-\d\d\d\d-\d\d-\d\d_\d+$/} @subs;
 
   my @sortedSubs = sort @subs;
   for(my $i=0; $i<@subs; $i++){
     if($subs[$i] ne $sortedSubs[$i]){
-      die "snapshots are out of order\n";
+      die "snapshots are out of order {ID versus date}\n";
     }
   }
 
@@ -254,22 +426,69 @@ sub getLastSnapshot($$){
 sub cleanupSnapshots($$$){
   my ($mountPoint, $prefix, $instances) = @_;
   my @subs = getSnapshots $mountPoint, $prefix;
-  @subs = reverse sort @subs;
-  my @toKeep = grep {defined} reverse @subs[0 .. $instances-1];
-  my @toDelete = grep {defined} reverse @subs[$instances .. $#subs];
+
+  if($instances eq 'all' and $prefix =~ /BACKUP/i){
+    die "NOT deleting all your backups, do that by hand if you like\n";
+  }
+
+  my @toKeep;
+  my @toDelete;
+  if($instances eq 'all'){
+    @toKeep = ();
+    @toDelete = @subs;
+  }else{
+    my @revsubs = reverse sort @subs;
+    @toKeep = grep {defined} reverse @revsubs[0 .. $instances-1];
+    @toDelete = grep {defined} reverse @revsubs[$instances .. $#revsubs];
+  }
+
   print "to keep (" . scalar(@toKeep) . "):\n ";
   print join "\n ", @toKeep;
   print "\n\n";
   print "to delete (" . scalar(@toDelete) . "):\n ";
   print join "\n ", @toDelete;
   print "\n\n";
-  die "ERROR: no snapshots would remain\n" if @toKeep == 0;
+
+  if($instances eq 'all'){
+    print "DELETING ALL THESE SNAPSHOTS\n";
+    print "ok? [Y/n] ";
+    my $ok = <STDIN>;
+    if($ok =~ /n/i){
+      die "user cancelled\n";
+    }
+  }else{
+    die "ERROR: no snapshots would remain\n" if @toKeep == 0;
+  }
+
   if(@toDelete > 0){
-    my @delSubvolumePaths = map {"$mountPoint/$_"} @toDelete;
-    run "btrfs", "subvolume", "delete", @delSubvolumePaths;
-    sync();
+    deleteSnapshots $mountPoint, @toDelete;
+  }
+}
+
+sub deleteSnapshots($@){
+  my ($mountPoint, @toDelete) = @_;
+
+  @toDelete = map {s/\/$//; $_} @toDelete;
+
+  my $subvolumes = getSubvolumes $mountPoint;
+  my %subIds = map {$$subvolumes{$_} => $_} keys %$subvolumes;
+
+  for my $sub(@toDelete){
+    die "MALFORMED SNAPSHOT NAME: '$sub' contains '/'\n" if $sub =~ /\//;
+    die "MISSING SNAPSHOT: $sub\n" if not -d "$mountPoint/$sub";
+    die "SUBVOLUME ID NOT FOUND: $sub\n" if not defined $subIds{$sub};
+  }
+
+  my @pathsToDelete = map {"$mountPoint/$_"} @toDelete;
+  my @qgroupsToDelete = map {"0/$subIds{$_}"} @toDelete;
+  run "btrfs", "subvolume", "delete", @pathsToDelete;
+  if(isQuotaEnabled($mountPoint)){
+    for my $qgroupId(@qgroupsToDelete){
+      tryrun "btrfs", "qgroup", "destroy", $qgroupId, $mountPoint;
+    }
   }
   print "deleted " . scalar(@toDelete) . " subvolumes\n";
+  sync();
 }
 
 sub getBtrfsMountDev($){
@@ -286,9 +505,36 @@ sub sync(){
   run "sync";
 }
 
+sub monitorPvLog(){
+  my $latest = undef;
+  my $pid = undef;
+  while(1){
+    my $prev = $latest;
+    $latest = latestPvLogFile();
+
+    if(defined $latest and (not defined $prev or $prev ne $latest)){
+      print "\n\nLOG FILE: $latest\n";
+      kill $pid if defined $pid;
+      $pid = fork;
+      if(not $pid){
+        exec "tail", "-F", $latest;
+      }
+    }
+
+    sleep 0.5;
+  }
+}
+
+sub latestPvLogFile(){
+  my @pvLogs = `ls /tmp/BACKUP-*-pv.log 2>/dev/null`;
+  chomp foreach @pvLogs;
+  @pvLogs = sort grep {/^\/tmp\/BACKUP-\d+-\d+-\d+_\d+-pv\.log$/} @pvLogs;
+  return @pvLogs == 0 ? undef : $pvLogs[-1];
+}
+
 sub ensureRoot(){
   if(`whoami` ne "root\n"){
-    print "rerunning as root\n";
+    print STDERR "rerunning as root\n";
     exec "sudo", $0, @ARGV;
   }
 }

@@ -1,16 +1,28 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use utf8;
 
 my $url = 'https://en.wikipedia.org/wiki/List_of_Escape_Pod_episodes';
-my $mp3UrlCache = "$ENV{HOME}/ep-mp3urls";
+my $epDir = "$ENV{HOME}/escapepod";
+my $mp3Dir = "$ENV{HOME}/Desktop/Music/books/Escape Pod";
 my $csvDelim = ';';
+my $forumUrl = "http://forum.escapeartists.net/index.php";
 
-sub getMP3Url($$$);
-sub fetchMP3Url($);
+sub parseHtml($$);
+sub htmlCacheFile($);
+sub ensureHtmlCache($$);
+sub checkHtmlCache($);
+sub attemptPutHtmlCache($$);
+sub readHtmlCache($);
+sub getMP3Url($);
 sub browserLoadArticle($);
-sub readMP3UrlCache();
-sub writeMP3UrlCache($);
+sub readAttCache($);
+sub writeAttCache($$);
+sub extraInfo();
+sub personLinks();
+sub fmtPersonLink($$);
+sub crawlForum();
 sub downloadMP3File($$$$);
 sub tagMP3File($$);
 sub newMP3FileName($);
@@ -22,10 +34,42 @@ sub maxLen(@);
 sub csv($);
 sub cell($);
 
+sub arrEquals($$);
+sub uniqArr(@);
 sub run(@);
 
+my $wikiPrefix = q@
+List of episodes for the [[Escape Pod (podcast) | Escape Pod podcast]].
+
+{| cellpadding="3" cellspacing="0" border="1" align="center" style="text-align:center" class="sortable"
+|- style="background-color:#EFEFEF"
+! '''#''' !! '''Name''' !! '''Author''' !! '''Reader''' !! '''Rating''' !! '''Time''' !! class="unsortable"|'''Discussion'''
+@;
+$wikiPrefix =~ s/^\n+//;
+my $wikiSuffix = q@
+|}
+
+[[Category:Lists of podcast episodes|Escape Pod]]
+
+<!--
+|-
+|  || [] || [[]] || [[]] ||  ||  || [ EPF]
+-->
+@;
+$wikiSuffix =~ s/^\n+//;
+
+my @ratings = (
+  "G"     => 'OK for Kids',
+  "PG"    => '10 and Up',
+  "PG-13" => '13 and Up',
+  "R"     => '17 and Up',
+  "X"     => 'Erotica - NOT FOR KIDS',
+);
+my %ratingCategories = @ratings;
+my @ratingOrder = @ratings[grep { !($_ & 1) } 0 .. $#ratings];
+
 my $cmds = join "|", qw(
-  --csv --url --mp3url --mp3filename --download --download-only --tag
+  --csv --url --wiki --mp3url --mp3filename --download --download-only --tag
 );
 my $usage = "Usage:
   $0 [$cmds [EPNUM EPNUM ..]]
@@ -36,11 +80,11 @@ my $usage = "Usage:
       Print episode info in CSV with delim=$csvDelim
     --url
       Print the article url for each EPNUM, using the links in the above url.
+    --wiki
+      Use article HTML pages and forums to approximate the wikipedia page
     --mp3url
-      Print the download URL from the escape pod article url.
-      For each EPNUM, if there is a line like \"EPNUM URL\" in $mp3UrlCache,
-        print that URL.
-      Otherwise, fetch it using curl/wget and store it in $mp3UrlCache.
+      Print the download URL, parsed from the escape pod article HTML.
+      HTML is fetched using curl/wget and cached in $epDir/html-cache/EPNUM.html
     --mp3filename
       Same as --mp3url, but only print the filename
     --download
@@ -77,7 +121,6 @@ sub main(@){
 
   my %okNums = map {$_+0 => 1} @nums;
 
-
   my $html = `wget -O - $url 2>/dev/null`;
   my @epNums;
   my @tableRows;
@@ -88,12 +131,16 @@ sub main(@){
 
   my $maxLen = maxLen @epNums;
 
+  my $articleUrlCache = readAttCache 'article-url-cache';
   my $eps = {};
   for my $tableRow(@tableRows){
     my $ep = parseTableRow $tableRow, $maxLen;
     next if keys %okNums > 0 and not defined $okNums{$$ep{number}+0};
-    $$eps{$$ep{number}} = $ep;
+    my $epNum = $$ep{number};
+    $$eps{$epNum} = $ep;
+    $$articleUrlCache{$epNum+0} = $$ep{articleUrl};
   }
+  writeAttCache 'article-url-cache', $articleUrlCache;
   my $exitCode = 0;
 
   if($cmd eq '--csv'){
@@ -104,11 +151,56 @@ sub main(@){
     for my $epNum(sort keys %$eps){
       print "$$eps{$epNum}{articleUrl}\n";
     }
+  }elsif($cmd eq "--wiki"){
+    if(@nums == 0){
+      @nums = sort map {sprintf "%03d", $_} keys %$articleUrlCache;
+    }
+    print $wikiPrefix if @nums == keys %$articleUrlCache;
+    for my $epNum(reverse @nums){
+      my $articleUrl = $$articleUrlCache{$epNum+0};
+      my $extraInfo = extraInfo();
+      my $personLinks = personLinks();
+      if(ensureHtmlCache $epNum, $articleUrl){
+        my $ex = {};
+        $ex = $$extraInfo{$epNum+0} if defined $$extraInfo{$epNum+0};
+        my $info = parseHtml $epNum, $ex;
+
+        my $rating = $$info{rating};
+        $rating = "" if $rating eq "?";
+        $rating =~ s/^\s*//;
+        $rating =~ s/\s*$//;
+
+        my $forum;
+        if($$info{forum} ne "?"){
+          $forum = "[$forumUrl?topic=$$info{forum} EPF]";
+        }else{
+          $forum = "none";
+        }
+
+        my $note = '';
+        $note = " $$ex{note}" if defined $$ex{note};
+        my $fmt = ''
+          . "|-\n| " . ($epNum+0)
+          . " || [$articleUrl $$info{title}]$note"
+          . " || " . fmtPersonLink($$info{author}, $personLinks)
+          . " || " . fmtPersonLink($$info{reader}, $personLinks)
+          . " || $rating"
+          . " || $$info{duration}"
+          . " || $forum"
+          . "\n"
+          ;
+        $fmt =~ s/&#8217;/'/g;
+        $fmt =~ s/&amp;/&/g;
+        print $fmt;
+      }else{
+        print STDERR "   ERROR: $epNum\n";
+      }
+    }
+    print $wikiSuffix if @nums == keys %$articleUrlCache;
   }elsif($cmd =~ /^(--mp3url|--mp3filename|--download|--download-only|--tag)/){
-    my $cache = readMP3UrlCache();
     for my $epNum(sort keys %$eps){
-      my $mp3Url = getMP3Url($epNum, $$eps{$epNum}{articleUrl}, $cache);
-      if(defined $mp3Url){
+      if(ensureHtmlCache $epNum, $$eps{$epNum}{articleUrl}){
+        my $mp3Url = getMP3Url $epNum;
         my $mp3FileName = $1 if $mp3Url =~ /([^\/]*\.mp3)$/;
         if($cmd eq '--mp3url'){
           print "$mp3Url\n";
@@ -121,11 +213,6 @@ sub main(@){
         }elsif($cmd eq '--tag'){
           tagMP3File($mp3FileName, $$eps{$epNum});
         }
-
-        if(not defined $$cache{$epNum+0}){
-          $$cache{$epNum+0} = $mp3Url;
-          writeMP3UrlCache $cache;
-        }
       }else{
         print "   ERROR: $epNum\n";
         $exitCode = 1;
@@ -135,66 +222,380 @@ sub main(@){
   exit $exitCode;
 }
 
-sub getMP3Url($$$){
-  my ($epNum, $articleUrl, $cache) = @_;
-  my $mp3Url = $$cache{$epNum+0};
+sub parseHtml($$){
+  my ($epNum, $ex) = @_;
+  my $html = readHtmlCache $epNum;
 
+  my $info = {};
+
+  my @atts = qw(title author reader rating duration forum);
+
+  my $mp3 = `ls "$mp3Dir"/$epNum*.mp3 2>/dev/null`;
+  chomp $mp3;
+
+  my $b = "(?:<\\/?\\s*(?:b|strong)[^>]*>)";
+  my $span = "(?:<\\/?\\s*span[^>]*>)";
+  my $ws = "[ \\t\\n]";
+  my $readBy = "(?:narrated|read)$ws+(?:and produced )?by:?$ws+";
+
+  my $isFlash = $html =~ /<title>.*Flash.*<\/title>/i;
+
+  $html =~ s/\xa0/ /g;
+  $html =~ s/\xc2/ /g;
+  $html =~ s/&nbsp;/ /g;
+  $html =~ s/&#160;/ /g;
+  $html =~ s/Â/ /g;
+
+  my $htmlNoMeta = $html;
+  $htmlNoMeta =~ s/<meta$ws*[^>]*>//g;
+
+  if(defined $$ex{title}){
+    $$info{title} = $$ex{title};
+  }elsif($html =~ /<title>(.*)<\/title>/i){
+    my $title = $1;
+    utf8::decode $title;
+    $title =~ s/[:\.\-]\s*Escape\s*Pod\s*//g;
+    $title =~ s/^\s*(EP|Escape\s*Pod|Episode)\s*\d+[:\-]?//i;
+    $title =~ s/^\s*//;
+    $title =~ s/\s*$//;
+    $title =~ s/&#039;/'/g;
+    $title =~ s/&amp;/&/g;
+    $title =~ s/’/'/g;
+    $title =~ s/“/"/g;
+    $title =~ s/”/"/g;
+    $title =~ s/&quot;/"/g;
+    $title =~ s/^\s*-\s*//g;
+    utf8::encode $title;
+    $$info{title} = $title;
+  }
+
+  if(not $isFlash){
+    if(defined $$ex{author}){
+      $$info{author} = $$ex{author};
+    }elsif($htmlNoMeta =~ />by$ws*:?\s*$span?$b?(?:<a [^>]*>)?$b?([^<(]+)/i){
+      $$info{author} = $1;
+    }
+  }else{
+    my @authors;
+    if(@authors == 0){
+      @authors = $htmlNoMeta =~ /$b$ws*by$ws+([^<(]*)$b/gi;
+    }
+    if(@authors == 0){
+      @authors = $htmlNoMeta =~ /$b$ws*by$ws+([^<(]*)</gi;
+    }
+    if(@authors == 0){
+      @authors = $htmlNoMeta =~ /<\/a>,$ws*by$ws+([^<(]*)</gi;
+    }
+    if(@authors == 0){
+      @authors = $htmlNoMeta =~ /(?<!narrated)$ws+by$ws+([^<(]*)</gi;
+    }
+    if(defined $$ex{author}){
+      $$info{author} = $$ex{author};
+    }else{
+      $$info{author} = join ', ', @authors if @authors > 0;
+    }
+  }
+
+  if(not $isFlash){
+    if(defined $$ex{reader}){
+      $$info{reader} = $$ex{reader};
+    }elsif($htmlNoMeta =~ /$readBy$span?$b?(?:<a [^>]*>)?$b?([^<(]+)/i){
+      $$info{reader} = $1;
+    }
+  }else{
+    my @readers;
+    if(@readers == 0){
+      @readers = $htmlNoMeta =~ /$readBy(?:<a$ws+[^>]*>)?([^<]+)/gi;
+    }
+    if(@readers == 0){
+      @readers = $htmlNoMeta =~ /\(narrator-? ([^)]+)\)/gi;
+    }
+    if(defined $$ex{reader}){
+      $$info{reader} = $$ex{reader};
+    }else{
+      $$info{reader} = join ', ', @readers if @readers > 0;
+    }
+  }
+
+  if(defined $$info{reader} and $$info{reader} =~ /^\s*the\s*author\s*$/i){
+    $$info{reader} = $$info{author};
+  }
+
+  if(defined $$ex{rating}){
+    $$info{rating} = $$ex{rating};
+  }else{
+    my $okRatings = join "|", reverse sort @ratingOrder;
+
+    if(not defined $$info{rating}){
+      if($html =~ /Rated\s*$b?\s*($okRatings)[ \t\n\.:\-<&]/){
+        $$info{rating} = $1;
+      }
+    }
+
+    if(not defined $$info{rating}){
+      for my $rating(@ratingOrder){
+        my $cat = $ratingCategories{$rating};
+        if($html =~ /Rated\s*$b?\s*$cat[ \t\n\.:\-<&]/i){
+          $$info{rating} = $rating;
+        }
+      }
+    }
+
+    if(not defined $$info{rating}){
+      for my $rating(@ratingOrder){
+        my $cat = $ratingCategories{$rating};
+        die "$rating" if not defined $cat;
+        if($html =~ /<meta property="article:section" content="$cat"\s*\/>/){
+          $$info{rating} = $rating;
+          last;
+        }
+      }
+    }
+  }
+
+  my $durCache = readAttCache 'duration-cache';
+  if(defined $$durCache{$epNum+0}){
+    $$info{duration} = $$durCache{$epNum+0};
+  }elsif($mp3 =~ /^(.*\/)?$epNum[^\/]*\.mp3$/ and -e $mp3){
+    my $dur = `duration -n "$mp3"`;
+    chomp $dur;
+    if($dur =~ /^(\d+:)+\d+$/){
+      $$info{duration} = $dur;
+      $$durCache{$epNum+0} = $dur;
+      writeAttCache 'duration-cache', $durCache;
+    }
+  }elsif($html =~ /<span[^>]*>\s*\[\s*((?:\d+:)+\d+)\s*\]\s*<\/span>/){
+    $$info{duration} = $1;
+  }
+
+  my $forumCache = readAttCache 'forum-cache';
+  if(defined $$ex{forum}){
+    my $prev = $$forumCache{$epNum+0};
+    if(not defined $prev or $prev ne $$ex{forum}){
+      $$forumCache{$epNum+0} = $$ex{forum};
+      writeAttCache 'forum-cache', $forumCache;
+    }
+  }
+  if(not defined $$forumCache{$epNum+0}){
+    print STDERR "updating forum cache\n";
+    my $epArticles = crawlForum;
+    for my $ep(sort keys %$epArticles){
+      $$forumCache{$ep+0} = $$epArticles{$ep};
+    }
+    writeAttCache 'forum-cache', $forumCache;
+  }
+  if(defined $$forumCache{$epNum+0}){
+    $$info{forum} = $$forumCache{$epNum+0};
+  }
+
+  for my $att(@atts){
+    die "Missing '$att' for $epNum\n" if not defined $$info{$att};
+  }
+
+  return $info;
+}
+
+sub htmlCacheFile($){
+  my $epNum = shift;
+  return "$epDir/html-cache/$epNum.html";
+}
+
+sub ensureHtmlCache($$){
+  my ($epNum, $articleUrl) = @_;
   my $attempts;
+  return 1 if checkHtmlCache $epNum;
 
   $attempts = 10;
-  while(not defined $mp3Url and $attempts > 0){
+  while($attempts > 0 and not checkHtmlCache $epNum){
     $attempts--;
-    $mp3Url = fetchMP3Url $articleUrl;
+    attemptPutHtmlCache $epNum, $articleUrl;
   }
-  if(not defined $mp3Url){
+  if(not checkHtmlCache $epNum){
     browserLoadArticle $articleUrl;
   }
   $attempts = 10;
-  while(not defined $mp3Url and $attempts > 0){
+  while($attempts > 0 and not checkHtmlCache $epNum){
     $attempts--;
-    $mp3Url = fetchMP3Url $articleUrl;
+    attemptPutHtmlCache $epNum, $articleUrl;
   }
-  return $mp3Url;
+
+  return checkHtmlCache $epNum;
 }
-sub fetchMP3Url($){
-  my $articleUrl = shift;
-  my $html = `curl -L "$articleUrl" 2>/dev/null`;
+
+sub checkHtmlCache($){
+  my $epNum = shift;
+  my $cacheFile = htmlCacheFile $epNum;
+  return 0 if not -e $cacheFile;
+  my $html = `cat $cacheFile`;
   if($html =~ /href="([^"]*\.mp3)"/){
-    return $1;
+    return 1;
+  }else{
+    run "rm", "-f", $cacheFile;
+    return 0;
   }
-  $html = `wget "$articleUrl" -O - 2>/dev/null`;
-  if($html =~ /href="([^"]*\.mp3)"/){
-    return $1;
-  }
-  return undef;
 }
+
+sub attemptPutHtmlCache($$){
+  my ($epNum, $articleUrl) = @_;
+  my $cacheFile = htmlCacheFile $epNum;
+
+  run "curl -L \"$articleUrl\" -o \"$cacheFile\" 2>/dev/null";
+  return 1 if checkHtmlCache $epNum;
+
+  run "wget \"$articleUrl\" -O \"$cacheFile\" 2>/dev/null";
+  return 1 if checkHtmlCache $epNum;
+
+  return 0;
+}
+
+sub readHtmlCache($){
+  my $epNum = shift;
+  my $cacheFile = htmlCacheFile $epNum;
+  die "Missing html file for $epNum\n" if not checkHtmlCache $epNum;
+  open FH, "< $cacheFile" or die "failed to read $cacheFile\n";
+  my @lines = <FH>;
+  close FH;
+  return join '', @lines;
+}
+
 sub browserLoadArticle($){
   my $articleUrl = shift;
   system "uzbl $articleUrl >/dev/null 2>/dev/null &";
   sleep 5;
   system "pkill", "-f", "uzbl.*$articleUrl";
 }
-sub readMP3UrlCache(){
+
+sub readAttCache($){
+  my $name = shift;
+  my $cacheFile = "$epDir/$name";
+  my @lines = `cat $cacheFile 2>/dev/null`;
   my $cache = {};
-  if(-e $mp3UrlCache){
-    for my $line(`cat $mp3UrlCache`){
-      if($line =~ /^(\d+) (.*\.mp3)$/){
-        $$cache{$1+0} = $2;
-      }
+  for my $line(@lines){
+    if($line =~ /^(\d+)\s+(.*)$/){
+      $$cache{$1+0} = $2;
     }
   }
   return $cache;
 }
-sub writeMP3UrlCache($){
-  my $cache = shift;
-  my @lines;
+
+sub writeAttCache($$){
+  my ($name, $cache) = @_;
+  my $cacheFile = "$epDir/$name";
+  my $s = '';
+  open FH, "> $cacheFile" or die "Couldnt write to $cacheFile\n";
   for my $epNum(sort {$a <=> $b} keys %$cache){
-    push @lines, "$epNum $$cache{$epNum}\n";
+    print FH sprintf "%03d %s\n", $epNum, $$cache{$epNum};
   }
-  open FH, "> $mp3UrlCache";
-  print FH @lines;
   close FH;
 }
+
+sub extraInfo(){
+  my $file = "$epDir/extra-info";
+  my $extraInfo = {};
+  for my $line(`cat $file`){
+    $line =~ s/#.*//;
+    next if $line =~ /^\s*$/;
+    if($line =~ /^(\d\d\d) (title|author|reader|rating|forum|note) (.*)$/){
+      $$extraInfo{$1+0}{$2} = $3;
+    }else{
+      die "malformed extra-info line: $line";
+    }
+  }
+  return $extraInfo;
+}
+
+sub personLinks(){
+  my $file = "$epDir/person-links";
+  my $personLinks = {};
+  for my $line(`cat $file`){
+    $line =~ s/#.*//;
+    next if $line =~ /^\s*$/;
+    if($line =~ /^(.*)=>(.*)$/){
+      my ($person, $link) = ($1, $2);
+      chomp $link;
+      $person =~ s/^\s*//;
+      $person =~ s/\s*$//;
+      $link =~ s/^\s*//;
+      $link =~ s/\s*$//;
+      $$personLinks{$person} = $link;
+    }else{
+      die "malformed person-links line: $line";
+    }
+  }
+  return $personLinks;
+}
+
+sub fmtPersonLink($$){
+  my ($person, $links) = @_;
+  return $person if $person =~ /[\[\]]/;
+
+  $person =~ s/\s*\.\s*Music\s*by\s*$//i;
+  $person =~ s/&#8217;/'/g;
+  $person =~ s/&amp;/&/g;
+  my @people = split /(?:(?:\s+|,)and\s+)|(?:\s*[&,]\s*)/, $person;
+  @people = grep {defined $_ and $_ =~ /\w/} @people;
+  @people = grep {not $_ =~ /^\s*e-?mail[ :-]*$/} @people;
+  @people = uniqArr @people;
+
+  my @fmtPeople;
+  for my $p(@people){
+    $p =~ s/\s*\.?\s*$//;
+    $p =~ s/ of the$//;
+    $p =~ s/ of$//;
+    $p =~ s/^author //;
+    $p =~ s/^and //;
+    $p =~ s/^\s*:\s*//;
+    $p =~ s/;\s*courtesy\s*$//;
+    $p =~ s/^\s*//;
+    $p =~ s/\s*$//;
+    my $link = $$links{$p};
+    my $fmt;
+    if(not defined $link){
+      $fmt = "[[$p]]";
+    }elsif($link =~ /^[ a-zA-Z0-9_\-]+$/){
+      $fmt = "[[$p ($link)|$p]]";
+    }else{
+      $fmt = "[$link $p]";
+    }
+    push @fmtPeople, $fmt;
+  }
+
+  return join ", ", @fmtPeople;
+}
+
+sub crawlForum(){
+  my $page = 0;
+  my $epArticles = {};
+  my $prevArticles = [];
+  while($page < 50){
+    my $board = "1." . (20*$page);
+    my $url = "$forumUrl?board=$board";
+    my $html = `curl -L \"$url\" 2>/dev/null`;
+    my $pageArticles = [];
+    while($html =~ /<a href="[^"]*topic=(\d+\.\d+)">EP(\d+)[^*]/g){
+      $$epArticles{$2} = $1;
+      push @$pageArticles, $2;
+    }
+    print "@$pageArticles\n";
+    if(arrEquals $pageArticles, $prevArticles){
+      print "REPEAT AT PAGE $page\n";
+      last;
+    }
+    $prevArticles = $pageArticles;
+    $page++;
+  }
+  return $epArticles;
+}
+
+sub getMP3Url($){
+  my $epNum = shift;
+  my $html = readHtmlCache $epNum;
+  if($html !~ /href="([^"]*\.mp3)"/){
+    die "Could not read mp3 url for $epNum\n";
+  }
+  return $1;
+}
+
 sub downloadMP3File($$$$){
   my ($mp3Url, $mp3FileName, $ep, $tagFile) = @_;
   my $newFileName = newMP3FileName $ep;
@@ -202,7 +603,6 @@ sub downloadMP3File($$$$){
     print "  skipping $$ep{number}..\n";
   }else{
     run "axel", $mp3Url;
-    die " downloading failed\n" if $? != 0;
     tagMP3File $mp3FileName, $ep if $tagFile;
   }
 }
@@ -218,7 +618,6 @@ sub tagMP3File($$){
   $oldFileName = $newFileName if not -e $oldFileName;
 
   run "id3v2", "--delete-all", $oldFileName;
-  die "error removing id3 tags for $$ep{number}\n" if $? != 0;
 
   run "id3v2",
     "--TIT2", $$ep{title},
@@ -228,14 +627,11 @@ sub tagMP3File($$){
     "--TALB", "Escape Pod",
     "--TYER", $$ep{date},
     $oldFileName;
-  die "error setting id3 tags for $$ep{number}\n" if $? != 0;
 
   run "mid3iconv", $oldFileName;
-  die "error setting encoding to unicode\n" if $? != 0;
 
   if($oldFileName ne $newFileName){
     run "mv", "--no-clobber", $oldFileName, $newFileName;
-    die "error renaming file\n" if $? != 0;
   }
 }
 sub newMP3FileName($){
@@ -257,15 +653,15 @@ sub parseTableRow($$){
   $tr =~ s/\n/ /g;
   $tr =~ s/<a [^<>]* >  \s*(.*?)\s*  < \s* \/ \s* a \s* >/$1/gsxi;
   $tr =~ s/\s*<td [^<>]* >  \s*(.*?)\s*  < \s* \/ \s* td \s* >\s*/<>$1/gsxi;
-  $tr =~ s/^\s*<tr>\s*<>(.*)<>\s*EPF\s*<\/tr>\s*$/$1/;
+  $tr =~ s/^\s*<tr>\s*<>(.*)<>\s*(EPF|none)\s*<\/tr>\s*$/$1/;
   if($tr =~ /^(\d+)<>([^<]*)<>([^<]*)<>([^<]*)<>([^<]*)<>([^<]*)$/){
     return {
       number => padl($maxLen, $1),
       title => $2,
       author => $3,
       reader => $4,
-      time => $5,
-      parentRating => $6,
+      rating => $5,
+      duration => $6,
       articleUrl => $articleUrl,
       date => $date,
     };
@@ -310,9 +706,29 @@ sub cell($){
   }
 }
 
+sub uniqArr(@){
+  my %seen;
+  my @newArr;
+  for my $elem(@_){
+    push @newArr, $elem if not defined $seen{$elem};
+    $seen{$elem} = 1;
+  }
+  return @newArr;
+}
+sub arrEquals($$){
+  my ($arr1, $arr2) = @_;
+  return 0 if not defined $arr1 or not defined $arr2;
+  return 0 if @$arr1 != @$arr2;
+  for(my $i=0; $i<@$arr1; $i++){
+    return 0 if $$arr1[$i] ne $$arr2[$i];
+  }
+  return 1;
+}
+
 sub run(@){
   print "@_\n";
   system @_;
+  die "error running @_\n" if $? != 0;
 }
 
 &main(@ARGV);
