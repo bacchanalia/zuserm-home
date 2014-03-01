@@ -25,7 +25,7 @@ main = do
       end = reverse
           [ W.monitorCpuW
           , W.monitorMemW
-          -- , W.progressBarW
+          , W.progressBarW
           , W.fcrondynW
           , sep
           , W.netStatsW
@@ -39,7 +39,7 @@ main = do
           -- , W.ekigaW
           -- , W.cpuIntelPstateW
           , W.cpuFreqsW
-          , W.fanW
+          -- , W.fanW
           , W.brightnessW
           , W.pingMonitorW "www.google.com" "G"
           , W.tpBattStatW $ barHeight cfg
