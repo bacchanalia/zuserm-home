@@ -53,11 +53,15 @@ shortcuts conf = "Shortcuts" @@ do
     "off"               @@ [m_ xK_Power, mA xK_Esc, mCA xK_Del] #! "off g"
     "term auto-cwd"     @@ m_    xK_Think#! "term -acd"
     "term"              @@ mA    xK_F2   #! "term"
-    "ghci"              @@ mA    xK_Think#! "term ghci"
+    "ghci"              @@ mA    xK_Think#! "term -acd ghci"
+    "ghci"              @@ m_    xK_KPDel#! "term -acd ghci"
+    "wabs"              @@ m_    xK_KPEnt#! "wauto"
     "Screen Shot"       @@ m_    xK_Print#! "scrot-bag"
     "Invert Colors"     @@ mW    xK_n    #! "xcalib -i -a"
+    {- On P55, screen will turn off, but not back on
     "Screen On/Off" @@  do mCA   xK_Up   #! "sudo screenpwr on"
                            mCA   xK_Down #! "sudo screenpwr off"
+    -}
     "Brightness"    @@ do
         "Up"            @@ mC    xK_Home #! "brightness up"
         "Down"          @@ mC    xK_End  #! "brightness down"
@@ -79,14 +83,21 @@ shortcuts conf = "Shortcuts" @@ do
         "Powersave"     @@ mC    xK_F3   #! "sudo cpu-set powersave"
         "Performance"   @@ mC    xK_F4   #! "sudo cpu-set performance"
     "Rotate Deasil/Widdershins" @@ do
-                           mCA   xK_Fwd  #! "rotate deasil"
-                           mCA   xK_Back #! "rotate widdershins"
+                           mCW   xK_Right#! "rotate deasil"
+                           mCW   xK_Left #! "rotate widdershins"
     "Applications"  @@ do
         "Firefox"       @@ mCA   xK_f    #! "firefox"
         "Chrome"        @@ mCA   xK_c    #! "chromium --incognito"
         "Pidgin"        @@ mCA   xK_p    #! "pidgin"
         "Transmission"  @@ mCA   xK_t    #! "transmission-gtk"
         "FBReader"      @@ mCA   xK_b    #! "fbreader"
+  where
+    xK_Think = xK_KP_Insert
+    xK_VolUp = xK_KP_Add
+    xK_VolDn = xK_KP_Subtract
+    xK_Mute  = xK_KP_Multiply
+    xK_KPDel = xK_KP_Delete
+    xK_KPEnt = xK_KP_Enter
 
 musicKeys conf = "Music" @@ do
     "klomp"         @@     mW    xK_a    #! "term klomp"
