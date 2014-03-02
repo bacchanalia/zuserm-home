@@ -25,13 +25,13 @@ staticAssert (null mouseOverlaps && null keyOverlaps) . execWriter $ do
     pretty mouseOverlaps
     pretty keyOverlaps
 
-main = xmonad . ewmh . pagerHints $ defaultConfig
+main = xmonad . ewmh . pagerHints . addStartUps $ defaultConfig
     { focusFollowsMouse  = False
     , normalBorderColor  = "#93a1a1"
     , focusedBorderColor = "#dc322f"
     , borderWidth        = 2
 
-    , startupHook        = myStartupHook
+    -- , startupHook        =
     , manageHook         = myManageHook <+> manageDocks
     , layoutHook         = myLayoutHook
 
@@ -50,24 +50,29 @@ spawnUnless prop cmd = withWindowSet $ \ss -> do
     qs <- mapM (runQuery prop) . Stk.allWindows $ ss
     unless (or qs) $ spawn cmd
 
+
 command = stringProperty "WM_COMMAND"
 a =~? b = (b `isInfixOf`) `fmap` a
-
-myStartupHook = do
-    spawnUnless (className =? "Pidgin")  "sleep 3 ; pidgin"
-    spawnUnless (className =? "Gnucash") "gnucash"
-    spawnUnless (className =? "Icedove") "icedove"
-    spawnUnless (command   =~? "TODO")   "term vim TODO/TODO"
 
 infixr 0 ~~>
 a ~~> b = tell (a --> b)
 
-myManageHook = execWriter $ do
-    className =? "Pidgin"       ~~> doShift "1"
-    className =? "Gnucash"      ~~> doShift "8"
-    className =? "Icedove"      ~~> doShift "9"
-    command   =~? "TODO"        ~~> doShift "9"
+addStartUps conf = conf { startupHook = startupHook', manageHook = manageHook' }
+  where
+    osw ws cmd cond = tell [(ws, cmd, cond)]
+    startups = execWriter $ do
+        osw "1" "sleep 3 ; pidgin"    $ className =? "Pidgin"
+        osw "8" "gnucash"             $ className =? "Gnucash"
+        osw "9" "icedove"             $ className =? "Icedove"
+        osw "9" "term vim TODO/TODO"  $ command   =~? "TODO"
+    startupHook' = do
+        forM startups $ \( _, cmd, cond) -> spawnUnless cond cmd
+        startupHook conf
+    manageHook' = execWriter $ do
+        forM startups $ \(ws,   _, cond) -> cond ~~> doShift ws
+        tell $ manageHook conf
 
+myManageHook = execWriter $ do
     title =? "Close Iceweasel"  ~~> restartFF
     title =? "Close Firefox"    ~~> restartFF
     title =? "npviewer.bin"     ~~> doFull
