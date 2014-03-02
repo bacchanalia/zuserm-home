@@ -17,6 +17,7 @@ import qualified XMonad.StackSet as Stk
 import System.Taffybar.Hooks.PagerHints (pagerHints)
 
 import Control.Concurrent (threadDelay)
+import Data.List (isInfixOf)
 
 staticAssert (null mouseOverlaps && null keyOverlaps) . execWriter $ do
     tell "Error: Overlap in bindings\n"
@@ -31,8 +32,8 @@ main = xmonad . ewmh . pagerHints $ defaultConfig
     , borderWidth        = 2
 
     , startupHook        = myStartupHook
-    , layoutHook         = myLayoutHook
     , manageHook         = myManageHook <+> manageDocks
+    , layoutHook         = myLayoutHook
 
     , workspaces         = workspaceNames
     , keys               = myKeyBindings
@@ -44,22 +45,39 @@ main = xmonad . ewmh . pagerHints $ defaultConfig
     -- , modMask            =
     }
 
-myStartupHook = return ()
+spawnUnless :: Query Bool -> String -> X ()
+spawnUnless prop cmd = withWindowSet $ \ss -> do
+    qs <- mapM (runQuery prop) . Stk.allWindows $ ss
+    unless (or qs) $ spawn cmd
+
+command = stringProperty "WM_COMMAND"
+a =~? b = (b `isInfixOf`) `fmap` a
+
+myStartupHook = do
+    spawnUnless (className =? "Pidgin")  "sleep 3 ; pidgin"
+    spawnUnless (className =? "Gnucash") "gnucash"
+    spawnUnless (className =? "Icedove") "icedove"
+    spawnUnless (command   =~? "TODO")   "term vim TODO/TODO"
+
+infixr 0 ~~>
+a ~~> b = tell (a --> b)
+
+myManageHook = execWriter $ do
+    className =? "Pidgin"       ~~> doShift "1"
+    className =? "Gnucash"      ~~> doShift "8"
+    className =? "Icedove"      ~~> doShift "9"
+    command   =~? "TODO"        ~~> doShift "9"
+
+    title =? "Close Iceweasel"  ~~> restartFF
+    title =? "Close Firefox"    ~~> restartFF
+    title =? "npviewer.bin"     ~~> doFull
+    title =? "plugin-container" ~~> doFull
 
 myLayoutHook = avoidStruts . smartBorders
              $   named "left" (Tall 1 incr ratio)
              ||| named "top"  (Mirror $ Tall 1 incr ratio)
              ||| named "full" Full
   where incr = 5/100 ; ratio = 50/100
-
-infixr 0 ~~>
-a ~~> b = tell (a --> b)
-
-myManageHook = execWriter $ do
-    title =? "Close Iceweasel"   ~~> restartFF
-    title =? "Close Firefox"     ~~> restartFF
-    title =? "npviewer.bin"      ~~> doFull
-    title =? "plugin-container"  ~~> doFull
 
 restartFF = do
     w <- ask
