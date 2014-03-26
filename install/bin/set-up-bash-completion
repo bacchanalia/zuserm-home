@@ -14,6 +14,7 @@ sub main(@) {
   my $files = {
     'ssrun' => complete("_ssrun", qw(ssrun)),
     'backup' => complete("_backup", qw(backup)),
+    'alarm' => complete("_alarm", qw(alarm)),
     'sudo-aliases' => complete("_root_command", qw(suod sudp)),
     'spawn' => complete("_root_command", qw(s spawn spawnex spawnexsudo)),
     'mnt' => complete("_mntnames", qw(mnt mnto)),
@@ -56,6 +57,14 @@ sub getFctImpls(){
       local cur
       cur="${COMP_WORDS[COMP_CWORD]}"
       words=$( backup --bash-complete "$COMP_LINE" "$COMP_POINT" )
+
+      COMPREPLY=( $(compgen -W "$words" -- $cur) )
+    }',
+
+    "_alarm" => '{
+      local cur
+      cur="${COMP_WORDS[COMP_CWORD]}"
+      words=$( alarm --bash-complete "$COMP_LINE" "$COMP_POINT" )
 
       COMPREPLY=( $(compgen -W "$words" -- $cur) )
     }',
