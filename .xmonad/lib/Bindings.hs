@@ -87,6 +87,7 @@ shortcuts conf = "Shortcuts" @@ do
                            mCW   xK_Left #! "rotate widdershins"
     "Applications"  @@ do
         "Firefox"       @@ mCA   xK_f    #! "firefox"
+        "FF Private"    @@ mCAS  xK_f    #! "firefox -new-instance -P private"
         "Chrome"        @@ mCA   xK_c    #! "chromium --incognito"
         "Pidgin"        @@ mCA   xK_p    #! "pidgin"
         "Transmission"  @@ mCA   xK_t    #! "transmission-gtk"
