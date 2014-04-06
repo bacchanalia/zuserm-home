@@ -93,8 +93,7 @@ fontconfig/
 .klomp-playlist
 .gconf/
 .gconfd/
-.ghc/
-.ghc-7.6.3/
+.ghc*/
 .gimp*/*
 !.gimp*/plug-ins/
 .gnome2/
