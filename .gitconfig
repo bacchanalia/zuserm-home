@@ -7,13 +7,14 @@
     a = add
     s = status
     c = commit
+    cp = cherry-pick
+    cpcon = cherry-pick --continue
     d = diff
     ds = diff --staged
     r = reset HEAD
     co = checkout
     b = branch
     m = merge --no-commit
-    cp = cherry-pick
     l = log --color --decorate
     lf = log --color --decorate --follow
     ln = log --color --decorate --name-status -M
