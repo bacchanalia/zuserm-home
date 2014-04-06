@@ -12,17 +12,25 @@ my $unmuteSinkCmd = '';
 my $muteSourceCmd = 'led mute_mic off';
 my $unmuteSourceCmd = 'led mute_mic on';
 
+my %cmds = (
+  "get-volume" =>    [qw(-g --get-volume    get-volume)],
+  "get-mute" =>      [qw(-m --get-mute      get-mute)],
+  "update-volume" => [qw(-u --update-volume update-volume)],
+);
+my %okCmds = map {$_ => join "|", @{$cmds{$_}}} keys %cmds;
+my $allOkCmds = join "|", values %okCmds;
+
 my $name = `basename $0`;
 chomp $name;
 my $usage = "Usage:
   $name [DEVTYPE]
     prints the volume and mute status
-  $name [DEVTYPE] get-volume
+  $name [DEVTYPE] $okCmds{'get-volume'}
     prints the volume
-  $name [DEVTYPE] update-volume
-    sets the volume to what get-volume returns
-  $name [DEVTYPE] get-mute
+  $name [DEVTYPE] $okCmds{'get-mute'}
     prints the mute status 'muted', 'unmuted', or 'unknown'
+  $name [DEVTYPE] $okCmds{'update-volume'}
+    sets the volume to what '$0 --get-volume' returns
   $name [DEVTYPE] VOLUME-ABS
     sets the absolute volume
   $name [DEVTYPE] VOLUME-REL [MAX]
@@ -34,7 +42,7 @@ my $usage = "Usage:
     unmute sinks  : '$unmuteSinkCmd'
     mute sources  : '$muteSourceCmd'
     unmute sources: '$unmuteSourceCmd'
-  
+
   DEVTYPE: [$sinkSyns] or [$sourceSyns]
     synonym for either 'sink' or 'source'. default is 'sink'
 
@@ -78,7 +86,7 @@ sub main(@){
   $dev = 'sink' if not defined $dev;
   $dev = 'sink' if $dev =~ /^($sinkSyns)$/;
   $dev = 'source' if $dev =~ /^($sourceSyns)$/;
-  
+
   my ($absVol, $relVol, $maxVol, $muteStatus, $cmd);
   if(@_ > 0 and $_[0] =~ /^(\d+)$/){
     $absVol = shift;
@@ -88,14 +96,15 @@ sub main(@){
     $maxVol = 100 if not defined $maxVol;
   }elsif(@_ > 0 and $_[0] =~ /^(mute|unmute|toggle)$/){
     $muteStatus = shift;
-  }elsif(@_ == 1 and $_[0] =~ /^(get-volume|update-volume)$/){
+  }elsif(@_ == 1 and $_[0] =~ /^($allOkCmds)$/){
     $cmd = shift;
   }
   die $usage if @_ > 0;
+  $cmd = '' if not defined $cmd;
 
   my $pacmdList = `$pacmd list-${dev}s`;
   my @indices = ($pacmdList =~ /^  [ *] index: (\d+)$/gsm);
-  
+
   if(defined $absVol){
     setVolPercent $dev, $_, $absVol foreach @indices;
   }elsif(defined $relVol){
@@ -123,9 +132,11 @@ sub main(@){
     system $unmuteSinkCmd if $muteVal eq 0 and $dev eq 'sink';
     system $muteSourceCmd if $muteVal eq 1 and $dev eq 'source';
     system $unmuteSourceCmd if $muteVal eq 0 and $dev eq 'source';
-  }elsif($cmd eq 'get-volume'){
+  }elsif($cmd =~ /^($okCmds{'get-volume'})$/){
     print getAverageVolPercent($pacmdList) . "\n";
-  }elsif($cmd eq 'update-volume'){
+  }elsif($cmd =~ /^($okCmds{'get-mute'})$/){
+    print getMuteStatus($pacmdList) . "\n";
+  }elsif($cmd =~ /^($okCmds{'update-volume'})$/){
     my $absVol = getAverageVolPercent($pacmdList);
     setVolPercent $dev, $_, $absVol foreach @indices;
   }else{
@@ -153,9 +164,11 @@ sub getAverageVolPercent($){
   my $count = 0;
   my $total = 0;
   for my $line(split /\n/, $pacmdList){
-    if($line =~ /^\tvolume: \d+:\s+(\d+)%/){
-      $count++;
-      $total += $1;
+    if($line =~ /^\tvolume:/){
+      while($line =~ /\s+(\d+)%/g){
+        $count++;
+        $total += $1;
+      }
     }
   }
   die "Could not parse volume\n" if $count == 0;

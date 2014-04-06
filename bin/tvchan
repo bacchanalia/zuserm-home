@@ -1,0 +1,171 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @ext = qw(mkv mp4 avi wmv m2ts);
+
+my $msgLen = 60;
+my $mplayerConfFile = "/tmp/mplayer-tvchan.conf";
+my $inputCmdFile = "/tmp/mplayer-tvchan-commands";
+my $inputConfFile = "/tmp/mplayer-tvchan-input.conf";
+
+my $mplayerConf = {
+  "fs"                => "yes",
+  "subfont-osd-scale" => 2,
+};
+
+my %commands = (
+  back    => [209, [qw( F9  1       )]],
+  forward => [210, [qw( F10 2 ENTER )]],
+  end     => [211, [qw( F11 3       )]],
+  quit    => [212, [qw( F12 4 q     )]],
+);
+my %exitCodes = map {$_ => ${$commands{$_}}[0]} keys %commands;
+
+my $inputConf = {};
+for my $cmd(values %commands){
+  my ($exitCode, $keys) = @$cmd;
+  $$inputConf{$_} = "quit $exitCode" foreach @$keys;
+}
+
+sub play($$$);
+sub getRandomEntry($);
+sub getRandomPos($);
+sub writeInputConf();
+sub writeMplayerConf();
+sub writeInputCommands(@);
+sub getProcLines(@);
+
+sub main(@){
+  my @dirs = @_;
+  die "Usage: $0 DIR [DIR ..]\n" if @dirs == 0;
+
+  writeInputConf;
+  writeMplayerConf;
+
+  my @cmd;
+  push @cmd, "find";
+  for my $dir(@dirs){
+    die "\"$dir\" is not a directory\n" if not -d $dir;
+    push @cmd, $dir;
+  }
+  push @cmd, "-false";
+  for my $ext(@ext){
+    push @cmd, ("-or", "-iname", "*.$ext");
+  }
+
+  my $files = getProcLines @cmd;
+  chomp foreach @$files;
+  my @history;
+  my $index = 0;
+  while(1){
+    my ($file, $pos);
+    if($index < @history){
+      ($file, $pos) = @{$history[$index]};
+    }else{
+      $file = getRandomEntry $files;
+      $pos = getRandomPos $file;
+      push @history, [$file, $pos];
+    }
+
+    my $msg = $file;
+    for my $dir(@dirs){
+      $msg =~ s/^$dir//;
+    }
+    my $len = length $msg;
+    if($len > $msgLen){
+      $msg = substr $msg, $len - $msgLen;
+    }
+
+    print "\n\nPLAYING: $file @ $pos\n\n";
+    my $status = play $file, $pos, $msg;
+    if($status == $exitCodes{back}){
+      $index--;
+      $index = 0 if $index < 0;
+    }elsif($status == $exitCodes{forward} or $status == 0){
+      $index++;
+      $index = @history if $index > @history;
+    }elsif($status == $exitCodes{end}){
+      $index = @history;
+    }elsif($status == $exitCodes{quit}){
+      last;
+    }elsif($status != 0){
+      die "\nunexpected mplayer exit code, terminating\n";
+    }
+  }
+}
+
+sub play($$$){
+  my ($file, $pos, $msg) = @_;
+  writeInputCommands(
+    "osd_show_text \"$msg\" 1000",
+  );
+  system "mplayer",
+    "-input", "conf=$inputConfFile",
+    "-input", "file=$inputCmdFile",
+    "-include", $mplayerConfFile,
+    "-ss", $pos,
+    $file,
+  ;
+  my $code = $?;
+  $code /= 256 if $code > 256;
+  return $code;
+}
+
+sub getRandomEntry($){
+  my $arr = shift;
+  my $randIndex = rand @$arr;
+  return $$arr[$randIndex];
+}
+
+sub getRandomPos($){
+  my $file = shift;
+  die "Could not find \"$file\"\n" if not -f $file;
+  my $durLines = getProcLines "duration", "-n", "-s", $file;
+  die "Error running duration on $file\n" if @$durLines != 1;
+  my $dur = $$durLines[0];
+  chomp $dur;
+
+  die "Malformed duration: $dur\n" if $dur !~ /^\d+(\.\d+)?$/;
+  my $pos = rand() * $dur;
+  return sprintf '%.2f', $pos;
+}
+
+sub writeInputConf(){
+  my $conf = '';
+  for my $key(keys %$inputConf){
+    $conf .= "$key $$inputConf{$key}\n";
+  }
+  open FH, "> $inputConfFile" or die "Could not write to $inputConfFile\n";
+  print FH $conf;
+  close FH;
+}
+
+sub writeMplayerConf(){
+  my $conf = '';
+  for my $key(keys %$mplayerConf){
+    $conf .= "$key=$$mplayerConf{$key}\n";
+  }
+  open FH, "> $mplayerConfFile" or die "Could not write to $mplayerConfFile\n";
+  print FH $conf;
+  close FH;
+}
+sub writeInputCommands(@){
+  my $cmds = '';
+  for my $cmd(@_){
+    $cmds .= "$cmd\n";
+  }
+  open FH, "> $inputCmdFile" or die "Could not write to $inputCmdFile\n";
+  print FH $cmds;
+  close FH;
+}
+
+sub getProcLines(@){
+  open FH, "-|", @_;
+  my @lines = <FH>;
+  close FH;
+  die "Error running \"@_\"\n" if $? != 0;
+  return \@lines;
+}
+
+&main(@ARGV);
