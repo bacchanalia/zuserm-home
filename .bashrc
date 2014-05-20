@@ -54,6 +54,7 @@ export HD='/media/Charybdis/zuserm'
 alias  HD="cd $HD"
 export TEXINPUTS=".:"
 
+alias vol='pulse-vol'
 alias ls='ls --color=auto'
 alias l='ls -alh'
 alias ll='l'
