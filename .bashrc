@@ -54,6 +54,11 @@ export HD='/media/Charybdis/zuserm'
 alias  HD="cd $HD"
 export TEXINPUTS=".:"
 
+#make a wild guess at the DISPLAY you might want
+if [[ -z "$DISPLAY" ]]; then
+  export DISPLAY=`ps -ef | grep /usr/bin/X | grep ' :[0-9] ' -o | grep :[0-9] -o`
+fi
+
 alias vol='pulse-vol'
 alias ls='ls --color=auto'
 alias l='ls -alh'
