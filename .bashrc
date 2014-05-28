@@ -67,8 +67,8 @@ for cmd in wconnect wauto tether resolv \
            mnt optimus xorg-conf bluetooth fan intel-pstate flasher
 do alias $cmd="sudo $cmd"; done
 
-function time         { command time $@; }
-function mkdir        { mkdir -p $@; }
+alias time="command time"
+alias mkdir="mkdir -p"
 
 function vol          { pulse-vol $@; }
 function ls           { ls --color=auto $@; }
