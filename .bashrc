@@ -98,18 +98,18 @@ for cmd in wconnect wauto tether resolv \
            mnt optimus xorg-conf bluetooth fan intel-pstate flasher
 do alias $cmd="sudo $cmd"; done
 
-function spawn { "$@" & disown ; }
-function spawnex { "$@" & disown && exit 0 ; }
-complete -F _root_command spawn spawnex
-function vims { vim `which $1` ; }
-function update-repo { sudo apt-get update \
+function spawn        { $@ & disown ; }
+function spawnex      { $@ & disown && exit 0 ; }
+function vims         { vim `which $1` ; }
+
+function update-repo  { sudo apt-get update \
                          -o Dir::Etc::sourcelist="sources.list.d/$1" \
                          -o Dir::Etc::sourceparts="-" \
                          -o APT::Get::List-Cleanup="0"
 }
-function git-log(){ git ln $@ ; }
-function git()
-{
+
+function git-log()    { git ln $@; }
+function git() {
   realgit="$(which git)"
   cmd="git-$1"
   if [ "$(type -t $cmd)" = "function" ]; then
