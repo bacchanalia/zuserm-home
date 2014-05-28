@@ -1,5 +1,5 @@
 [ -f /etc/bashrc ] && . /etc/bashrc
-[ -f /etc/bash_completion ] && . /etc/bash_completion
+[ -n "$PS1" ] && [ -f /etc/bash_completion ] && . /etc/bash_completion
 
 shopt -s histappend
 HISTCONTROL=ignoredups:ignorespace:ignoreboth
@@ -31,17 +31,19 @@ pathRemove ()  { for x in $@; do
   done
 }
 
-pathAppend          \
-  $HOME/.cabal/bin  \
-  /usr/local/bin    \
-  /usr/bin          \
-  /bin              \
-  /usr/local/sbin   \
-  /usr/sbin         \
-  /sbin             \
-  /usr/local/games  \
-  /usr/games        \
-;
+if [ -n "$PS1" ]; then
+  pathAppend          \
+    $HOME/.cabal/bin  \
+    /usr/local/bin    \
+    /usr/bin          \
+    /bin              \
+    /usr/local/sbin   \
+    /usr/sbin         \
+    /sbin             \
+    /usr/local/games  \
+    /usr/games        \
+  ;
+fi
 
 export GHC_HP_VERSION="7.6.3"
 pathPrepend  \
