@@ -63,6 +63,9 @@ if [[ -z "$DISPLAY" ]]; then
   export DISPLAY=`ps -ef | grep /usr/bin/X | grep ' :[0-9] ' -o | grep :[0-9] -o`
 fi
 
+function time         { command time $@; }
+function mkdir        { mkdir -p $@; }
+
 function vol          { pulse-vol $@; }
 function ls           { ls --color=auto $@; }
 function l            { ls -alh $@; }
@@ -78,8 +81,6 @@ function lk           { sudo chown -R root. $@; }
 function ulk          { sudo chown -R zuserm. $@; }
 function printers     { sudo system-config-printer $@; }
 function evi          { spawn evince $@; }
-function time         { command time $@; }
-function mkdir        { mkdir -p $@; }
 function snapshot     { backup --snapshot $@; }
 function groups-info  { backup --info --quick --sort-by=size $@; }
 
