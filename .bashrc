@@ -63,6 +63,10 @@ if [[ -z "$DISPLAY" ]]; then
   export DISPLAY=`ps -ef | grep /usr/bin/X | grep ' :[0-9] ' -o | grep :[0-9] -o`
 fi
 
+for cmd in wconnect wauto tether resolv \
+           mnt optimus xorg-conf bluetooth fan intel-pstate flasher
+do alias $cmd="sudo $cmd"; done
+
 function time         { command time $@; }
 function mkdir        { mkdir -p $@; }
 
@@ -84,6 +88,10 @@ function evi          { spawn evince $@; }
 function snapshot     { backup --snapshot $@; }
 function groups-info  { backup --info --quick --sort-by=size $@; }
 
+function spawn        { $@ & disown ; }
+function spawnex      { $@ & disown && exit 0 ; }
+function vims         { vim `which $1` ; }
+
 function :l           { ghci; }
 function :h           { man; }
 function :q           { exit; }
@@ -91,16 +99,6 @@ function :r           { . /etc/profile; . ~/.bashrc; }
 
 function cbi          { spawn chromium-browser --incognito $@; }
 function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf ; }
-
-#alias o='gnome-open'
-
-for cmd in wconnect wauto tether resolv \
-           mnt optimus xorg-conf bluetooth fan intel-pstate flasher
-do alias $cmd="sudo $cmd"; done
-
-function spawn        { $@ & disown ; }
-function spawnex      { $@ & disown && exit 0 ; }
-function vims         { vim `which $1` ; }
 
 function update-repo  { sudo apt-get update \
                          -o Dir::Etc::sourcelist="sources.list.d/$1" \
