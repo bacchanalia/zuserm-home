@@ -19,7 +19,9 @@ if [ "$TERM" == "rxvt" ]; then
   PROMPT_COMMAND='if [ "$WINDOW_TITLE" ]; then '$p1'; else '$p2'; fi'
 fi
 
-PS1="\[\033[G\]$PS1"
+if [ -n "PS1" ]; then
+  PS1="\[\033[G\]$PS1"
+fi
 
 pathAppend ()  { for x in $@; do pathRemove $x; export PATH="$PATH:$x"; done }
 pathPrepend () { for x in $@; do pathRemove $x; export PATH="$x:$PATH"; done }
