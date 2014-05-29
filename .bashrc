@@ -33,19 +33,17 @@ pathRemove ()  { for x in $@; do
   done
 }
 
-if [ -n "$PS1" ]; then
-  pathAppend          \
-    $HOME/.cabal/bin  \
-    /usr/local/bin    \
-    /usr/bin          \
-    /bin              \
-    /usr/local/sbin   \
-    /usr/sbin         \
-    /sbin             \
-    /usr/local/games  \
-    /usr/games        \
-  ;
-fi
+pathAppend          \
+  $HOME/.cabal/bin  \
+  /usr/local/bin    \
+  /usr/bin          \
+  /bin              \
+  /usr/local/sbin   \
+  /usr/sbin         \
+  /sbin             \
+  /usr/local/games  \
+  /usr/games        \
+;
 
 export GHC_HP_VERSION="7.6.3"
 pathPrepend  \
