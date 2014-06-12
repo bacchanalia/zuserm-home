@@ -1,5 +1,5 @@
 sudo net-mon stop
-sudo wauto &
+sudo wauto www.google.com &
 
 ~/.xconfig
 (sleep 10; xconfig) &
