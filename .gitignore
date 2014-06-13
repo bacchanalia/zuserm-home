@@ -55,6 +55,7 @@ wvdial.conf
 
 #logs, history, caches
 escapepod/*-cache
+escapepod/*-out
 .local/
 .cache/
 fontconfig/
