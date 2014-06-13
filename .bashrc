@@ -97,6 +97,17 @@ function vims         { vim `which $1` ; }
 function cbi          { spawn chromium-browser --incognito "$@"; }
 function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf ; }
 
+function execAlarm() {
+  $@
+  exitCode="$?"
+  if [ $exitCode == 0 ]; then
+    alarm -s success
+  else
+    alarm -s failure
+  fi
+  bash -c "exit $exitCode"
+}
+
 function update-repo  { sudo apt-get update \
                          -o Dir::Etc::sourcelist="sources.list.d/$1" \
                          -o Dir::Etc::sourceparts="-" \
