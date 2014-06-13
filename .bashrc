@@ -72,29 +72,29 @@ alias :h='man'
 alias :q='exit'
 alias :r='. /etc/profile; . ~/.bashrc;'
 
-function vol          { pulse-vol $@; }
-function ls           { ls --color=auto $@; }
-function l            { ls -alh $@; }
-function ll           { l $@; }
-function ld           { l -d $@; }
-function g            { git $@; }
-function grep         { grep --color=auto $@; }
-function hat          { highlight --out-format=ansi --force $@; }
-function codegrep     { grep -RIhA $@; }
-function rmplayer     { rm $@; }
-function tags         { tags id3v2 -l $@; }
-function lk           { sudo chown -R root. $@; }
-function ulk          { sudo chown -R zuserm. $@; }
-function printers     { sudo system-config-printer $@; }
-function evi          { spawn evince $@; }
-function snapshot     { backup --snapshot $@; }
-function qgroups-info { backup --info --quick --sort-by=size $@; }
+function vol          { pulse-vol "$@"; }
+function ls           { ls --color=auto "$@"; }
+function l            { ls -alh "$@"; }
+function ll           { l "$@"; }
+function ld           { l -d "$@"; }
+function g            { git "$@"; }
+function grep         { grep --color=auto "$@"; }
+function hat          { highlight --out-format=ansi --force "$@"; }
+function codegrep     { grep -RIhA "$@"; }
+function rmplayer     { rm "$@"; }
+function tags         { tags id3v2 -l "$@"; }
+function lk           { sudo chown -R root. "$@"; }
+function ulk          { sudo chown -R zuserm. "$@"; }
+function printers     { sudo system-config-printer "$@"; }
+function evi          { spawn evince "$@"; }
+function snapshot     { backup --snapshot "$@"; }
+function qgroups-info { backup --info --quick --sort-by=size "$@"; }
 
 function spawn        { "$@" & disown ; }
 function spawnex      { "$@" & disown && exit 0 ; }
 function vims         { vim `which $1` ; }
 
-function cbi          { spawn chromium-browser --incognito $@; }
+function cbi          { spawn chromium-browser --incognito "$@"; }
 function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf ; }
 
 function update-repo  { sudo apt-get update \
@@ -103,7 +103,7 @@ function update-repo  { sudo apt-get update \
                          -o APT::Get::List-Cleanup="0"
 }
 
-function git-log()    { git ln $@; }
+function git-log()    { git ln "$@"; }
 function git() {
   realgit="$(which git)"
   realcmd="$1"
