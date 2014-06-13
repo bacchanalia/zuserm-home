@@ -1,5 +1,5 @@
 [ -f /etc/bashrc ] && . /etc/bashrc
-[ -f /etc/bash_completion ] && . /etc/bash_completion
+[ -n "$PS1" ] && [ -f /etc/bash_completion ] && . /etc/bash_completion
 
 shopt -s histappend
 HISTCONTROL=ignoredups:ignorespace:ignoreboth
@@ -19,7 +19,9 @@ if [ "$TERM" == "rxvt" ]; then
   PROMPT_COMMAND='if [ "$WINDOW_TITLE" ]; then '$p1'; else '$p2'; fi'
 fi
 
-PS1="\[\033[G\]$PS1"
+if [ -n "PS1" ]; then
+  PS1="\[\033[G\]$PS1"
+fi
 
 pathAppend ()  { for x in $@; do pathRemove $x; export PATH="$PATH:$x"; done }
 pathPrepend () { for x in $@; do pathRemove $x; export PATH="$x:$PATH"; done }
@@ -59,58 +61,74 @@ if [[ -z "$DISPLAY" ]]; then
   export DISPLAY=`ps -ef | grep /usr/bin/X | grep ' :[0-9] ' -o | grep :[0-9] -o`
 fi
 
-alias vol='pulse-vol'
-alias ls='ls --color=auto'
-alias l='ls -alh'
-alias ll='l'
-alias ld='l -d'
-alias cl='. cl'
-alias g='git'
-alias grep='grep --color=auto'
-alias hat='highlight --out-format=ansi --force'
-alias codegrep='grep -RIhA'
-alias rmplayer='rm'
-alias tags='id3v2 -l'
-alias lk='sudo chown -R root:root'
-alias ulk='sudo chown -R zuserm:zuserm'
-alias printers='sudo system-config-printer'
-alias evi='spawn evince'
-alias time='command time'
-alias mkdir='mkdir -p'
-alias snapshot='backup --snapshot'
-alias qgroups-info='backup --info --quick --sort-by=size'
-
-alias :l='ghci'
-alias :h='man'
-alias :q='exit'
-alias :r='. /etc/profile ; . ~/.bashrc'
-
-alias cbi='spawn chromium-browser --incognito'
-function tex2pdf { pdflatex -halt-on-error "$1".tex && evince "$1".pdf ; }
-
-#alias o='gnome-open'
-
 for cmd in wconnect wauto tether resolv \
            mnt optimus xorg-conf bluetooth fan intel-pstate flasher
 do alias $cmd="sudo $cmd"; done
 
-function spawn { "$@" & disown ; }
-function spawnex { "$@" & disown && exit 0 ; }
-complete -F _root_command spawn spawnex
-function vims { vim `which $1` ; }
-function update-repo { sudo apt-get update \
+alias time="command time"
+alias mkdir="mkdir -p"
+alias :l='ghci'
+alias :h='man'
+alias :q='exit'
+alias :r='. /etc/profile; . ~/.bashrc;'
+
+function vol          { pulse-vol "$@"; }
+function ls           { ls --color=auto "$@"; }
+function l            { ls -alh "$@"; }
+function ll           { l "$@"; }
+function ld           { l -d "$@"; }
+function g            { git "$@"; }
+function grep         { grep --color=auto "$@"; }
+function hat          { highlight --out-format=ansi --force "$@"; }
+function codegrep     { grep -RIhA "$@"; }
+function rmplayer     { rm "$@"; }
+function tags         { tags id3v2 -l "$@"; }
+function lk           { sudo chown -R root. "$@"; }
+function ulk          { sudo chown -R zuserm. "$@"; }
+function printers     { sudo system-config-printer "$@"; }
+function evi          { spawn evince "$@"; }
+function snapshot     { backup --snapshot "$@"; }
+function qgroups-info { backup --info --quick --sort-by=size "$@"; }
+
+function spawn        { "$@" & disown ; }
+function spawnex      { "$@" & disown && exit 0 ; }
+function vims         { vim `which $1` ; }
+
+function cbi          { spawn chromium-browser --incognito "$@"; }
+function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf ; }
+
+function execAlarm() {
+  $@
+  exitCode="$?"
+  if [ $exitCode == 0 ]; then
+    alarm -s success
+  else
+    alarm -s failure
+  fi
+  bash -c "exit $exitCode"
+}
+
+function update-repo  { sudo apt-get update \
                          -o Dir::Etc::sourcelist="sources.list.d/$1" \
                          -o Dir::Etc::sourceparts="-" \
                          -o APT::Get::List-Cleanup="0"
 }
-function git-log(){ git ln $@ ; }
-function git()
-{
+
+function git-log() {
+  git ln "$@"
+}
+
+function git() {
   realgit="$(which git)"
-  cmd="git-$1"
-  if [ "$(type -t $cmd)" = "function" ]; then
+  realcmd="$1"
+  fct="git-$realcmd"
+  if [ "$(type -t $fct)" = "function" ]; then
     shift
-    $cmd "$@"
+    $fct "$@"
+  elif [[ "$realcmd" == *-real ]]; then
+    shift
+    cmd=${realcmd%-real}
+    $realgit $cmd "$@"
   else
     $realgit "$@"
   fi
