@@ -67,6 +67,10 @@ do alias $cmd="sudo $cmd"; done
 
 alias time="command time"
 alias mkdir="mkdir -p"
+alias :l='ghci'
+alias :h='man'
+alias :q='exit'
+alias :r='. /etc/profile; . ~/.bashrc;'
 
 function vol          { pulse-vol $@; }
 function ls           { ls --color=auto $@; }
@@ -89,11 +93,6 @@ function qgroups-info { backup --info --quick --sort-by=size $@; }
 function spawn        { "$@" & disown ; }
 function spawnex      { "$@" & disown && exit 0 ; }
 function vims         { vim `which $1` ; }
-
-function :l           { ghci; }
-function :h           { man; }
-function :q           { exit; }
-function :r           { . /etc/profile; . ~/.bashrc; }
 
 function cbi          { spawn chromium-browser --incognito $@; }
 function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf ; }
