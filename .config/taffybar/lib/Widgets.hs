@@ -17,9 +17,10 @@ module Widgets(
   openvpnW,
   pidginPipeW,
   pingMonitorW,
-  pingLabelW,
   progressBarW,
+  screenSaverW,
   sepW,
+  speakerW,
   tpBattStatW,
   thunderbirdW,
   volumeW,
@@ -42,9 +43,11 @@ import Net(netW)
 import NetStats(netStatsW)
 import Openvpn(openvpnW)
 import PidginPipe(pidginPipeW)
-import PingMonitor(pingMonitorW, pingLabelW)
+import PingMonitor(pingMonitorW)
 import ProgressBar(progressBarW)
+import ScreenSaver(screenSaverW)
 import Sep(sepW)
+import Speaker(speakerW)
 import TPBattStat(tpBattStatW)
 import Thunderbird(thunderbirdW)
 import Volume(volumeW)

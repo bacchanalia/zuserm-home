@@ -3,6 +3,7 @@ android-tools-adb
 aspell
 aspell-en
 atomicparsley
+axel
 bluetooth
 bluez
 buffer
@@ -11,9 +12,11 @@ cuetools
 curl
 daemon
 exfalso
+expect
 feh
 ffmpeg
 flac
+fll-iso2usb
 fluidsynth
 geeqie
 gnome-disk-utility
@@ -30,6 +33,7 @@ libav-tools
 libgdbm-dev
 libnotify-bin
 librsvg2-bin
+libtext-csv-perl
 libtool
 libxslt1-dev
 lltag
@@ -60,6 +64,7 @@ qiv
 scrot
 shntool
 sqlite3
+telnet
 testdisk
 time
 toshset
@@ -73,6 +78,7 @@ wine
 wine32
 wmctrl
 wvdial
+x11-apps
 x11vnc
 xbacklight
 xcalib
@@ -80,4 +86,5 @@ xdotool
 xinput
 xmacro
 xsel
+xprintidle
 xtightvncviewer
