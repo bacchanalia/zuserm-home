@@ -84,10 +84,10 @@ function ulk          { sudo chown -R zuserm. $@; }
 function printers     { sudo system-config-printer $@; }
 function evi          { spawn evince $@; }
 function snapshot     { backup --snapshot $@; }
-function groups-info  { backup --info --quick --sort-by=size $@; }
+function qgroups-info { backup --info --quick --sort-by=size $@; }
 
-function spawn        { $@ & disown ; }
-function spawnex      { $@ & disown && exit 0 ; }
+function spawn        { "$@" & disown ; }
+function spawnex      { "$@" & disown && exit 0 ; }
 function vims         { vim `which $1` ; }
 
 function :l           { ghci; }
