@@ -17,7 +17,7 @@ xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Edge Scrolling" 0 0 0
 # SynPS/2 Synaptics TouchPad: x-axis range 1472 - 5658 (res 41)
 # SynPS/2 Synaptics TouchPad: y-axis range 1408 - 4692 (res 54)
 xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Soft Button Areas" 3983 0 0 0 3146 3983 0 0
-xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Area" 0 0 1642 4457
+xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Area" 0 0 0 4457
 
 
 #http://www.thinkwiki.org/wiki/How_to_configure_the_TrackPoint
