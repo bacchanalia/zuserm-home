@@ -62,6 +62,7 @@ fontconfig/
 .fontconfig
 .gstreamer-0.10/
 .bash_history
+.recently-used
 .src-cache/
 .viminfo
 .vim/.netrwhist
