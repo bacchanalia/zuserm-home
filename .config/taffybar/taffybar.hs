@@ -42,7 +42,7 @@ main = do
           , W.cpuFreqsW
           -- , W.fanW
           , W.brightnessW
-          , colW [ W.pingMonitorW "G" "www.google.com" "G" ]
+          , colW [ W.pingMonitorW "G" "www.google.com" ]
           , W.tpBattStatW $ barHeight cfg
           , sep
           , W.clockW
