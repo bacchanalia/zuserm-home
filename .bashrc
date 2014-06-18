@@ -73,12 +73,12 @@ alias :q='exit'
 alias :r='. /etc/profile; . ~/.bashrc;'
 
 function vol          { pulse-vol "$@"; }
-function ls           { ls --color=auto "$@"; }
+function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
 function g            { git "$@"; }
-function grep         { grep --color=auto "$@"; }
+function grep         { command grep --color=auto "$@"; }
 function hat          { highlight --out-format=ansi --force "$@"; }
 function codegrep     { grep -RIhA "$@"; }
 function rmplayer     { rm "$@"; }
