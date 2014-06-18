@@ -90,6 +90,7 @@ fontconfig/
 .klompcur
 .klompdb
 .klomphistory
+.klomplibhistory
 .klomplist
 .klomp-playlist
 .gconf/
