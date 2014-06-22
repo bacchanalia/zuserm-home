@@ -7,8 +7,8 @@ heartbeat-cmd=xidlereset
 #channels=6
 
 #kernel fix
-vo=x11
-zoom=yes
+vo=gl
+#zoom=yes
 
 alang=jp
 slang=en
