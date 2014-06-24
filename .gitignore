@@ -55,7 +55,13 @@ wvdial.conf
 
 #logs, history, caches
 .local/
-.cache/
+.cache/*
+!.cache/escapepod/
+!.cache/podcastle/
+.cache/escapepod/*
+.cache/podcastle/*
+!.cache/escapepod/downloads
+!.cache/podcastle/downloads
 fontconfig/
 .fontconfig
 .gstreamer-0.10/
