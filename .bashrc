@@ -89,6 +89,8 @@ function printers     { sudo system-config-printer "$@"; }
 function evi          { spawn evince "$@"; }
 function snapshot     { backup --snapshot "$@"; }
 function qgroups-info { backup --info --quick --sort-by=size "$@"; }
+function escape-pod   { escape-pod-tool --escapepod "$@"; }
+function podcastle    { escape-pod-tool --podcastle "$@"; }
 
 function spawn        { "$@" & disown ; }
 function spawnex      { "$@" & disown && exit 0 ; }
