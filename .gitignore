@@ -58,10 +58,13 @@ wvdial.conf
 .cache/*
 !.cache/escapepod/
 !.cache/podcastle/
+!.cache/pseudopod/
 .cache/escapepod/*
 .cache/podcastle/*
+.cache/pseudopod/*
 !.cache/escapepod/downloads
 !.cache/podcastle/downloads
+!.cache/pseudopod/downloads
 fontconfig/
 .fontconfig
 .gstreamer-0.10/
