@@ -1,0 +1,4 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+exec "ipmagic", "n9", "--user", "user", @ARGV;
