@@ -1,6 +1,6 @@
 sudo mnt --other -m Charybdis
 
-Esetroot -scale "$HOME/Pictures/Backgrounds/jamaicadyer-background.jpg"
+Esetroot -scale "$HOME/Pictures/Backgrounds/GardenofEarthlyDelights.jpg"
 xsetroot -cursor_name left_ptr
 for x in $HOME/.xresources-*; do xrdb -merge "$x"; done
 
