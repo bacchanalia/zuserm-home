@@ -81,6 +81,7 @@ fontconfig/
 .audacity-data/
 .cabal/
 .config/*
+!.config/backup.conf
 !.config/ipmagic/
 !.config/taffybar/taffybar.hs
 !.config/taffybar/lib/
