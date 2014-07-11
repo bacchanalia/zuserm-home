@@ -103,6 +103,7 @@ fontconfig/
 printers/
 .pulse/
 .sane/
+.subversion
 .tor/
 .vidalia/
 .wine/
