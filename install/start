@@ -12,28 +12,29 @@
 
 ./install-xmonad-taffybar
 ./install-tpbattstat
-./set-up-autologin
 ./set-up-grub
 ./set-up-systemd
+./set-up-autologin
 
 ./install-apt-packages [1-7]
 ./install-fcron
 ./install-git
 ./install-klomp
 ./install-pidgin-pipe-notification
-./install-twip
+./install-qtbigtext
 
 ./set-up-alternatives
 ./set-up-bash-completion
 ./set-up-dnscache
-./set-up-ekiga
-./set-up-picard
-./set-up-printers
-./set-up-scratchbox
-./set-up-transmission
+#./set-up-ekiga
+#./set-up-picard
+#./set-up-printers
+#./set-up-scratchbox
+#./set-up-transmission
 
-./install-kitchensink
-./install-user-haskell
+#./install-kitchensink
+#./install-user-haskell
+
 ./sudo apt-get update
 ./sudo apt-get dist-upgrade
 
