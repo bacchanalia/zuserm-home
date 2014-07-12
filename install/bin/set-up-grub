@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# TODO update
 use strict;
 use warnings;
 use lib `dirname $0 | tr -d '\n'`;
@@ -26,6 +27,7 @@ my $grubConfig = {
   GRUB_BACKGROUND => $backgroundDest,
   GRUB_CMDLINE_LINUX_DEFAULT => "\"$linux\"",
   GRUB_DISTRIBUTOR => "\"siduction\"",
+  GRUB_THEME => "",
 };
 
 my $menuConfig = {
