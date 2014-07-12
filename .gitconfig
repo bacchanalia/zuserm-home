@@ -15,10 +15,10 @@
     co = checkout
     b = branch
     m = merge --no-commit
-    l = log --color --decorate
-    lf = log --color --decorate --follow
-    ln = log --color --decorate --name-status -M
-    lt = log --color --decorate --name-status -M \
+    l = log --color --decorate --topo-order
+    lf = log --color --decorate --topo-order --follow
+    ln = log --color --decorate --topo-order --name-status -M
+    lt = log --color --decorate --topo-order --name-status -M \
              --notes=review --notes=bug --notes=dd
     dn = pull --no-commit
     up = push
