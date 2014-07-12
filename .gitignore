@@ -54,10 +54,17 @@ wvdial.conf
 .gksu.lock
 
 #logs, history, caches
-escapepod/*-cache
-escapepod/*-out
 .local/
-.cache/
+.cache/*
+!.cache/escapepod/
+!.cache/podcastle/
+!.cache/pseudopod/
+.cache/escapepod/*
+.cache/podcastle/*
+.cache/pseudopod/*
+!.cache/escapepod/downloads
+!.cache/podcastle/downloads
+!.cache/pseudopod/downloads
 fontconfig/
 .fontconfig
 .gstreamer-0.10/
@@ -73,6 +80,7 @@ fontconfig/
 .audacity-data/
 .cabal/
 .config/*
+!.config/backup.conf
 !.config/ipmagic/
 !.config/taffybar/taffybar.hs
 !.config/taffybar/lib/
