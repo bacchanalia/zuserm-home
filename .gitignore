@@ -85,6 +85,8 @@ fontconfig/
 !.config/taffybar/taffybar.hs
 !.config/taffybar/lib/
 !.config/tpbattstat.conf
+.cpan/
+.cpanm/
 .FBReader/
 fontconfig/
 .fontconfig/
