@@ -16,8 +16,10 @@ import qualified XMonad.StackSet as Stk
 
 import System.Taffybar.Hooks.PagerHints (pagerHints)
 
+import Control.Applicative ((<$>))
 import Control.Concurrent (threadDelay)
 import Data.List (isInfixOf)
+import System.FilePath ((</>))
 import System.Directory (getHomeDirectory)
 
 staticAssert (null mouseOverlaps && null keyOverlaps) . execWriter $ do
@@ -46,7 +48,7 @@ main = xmonad . ewmh . pagerHints . addStartUps $ defaultConfig
     -- , modMask            =
     }
 
-relToHomeDir file = fmap (++ "/" ++ file) getHomeDirectory
+relToHomeDir file = (</> file) <$> getHomeDirectory
 
 spawnUnless :: Query Bool -> String -> X ()
 spawnUnless prop cmd = withWindowSet $ \ss -> do
@@ -76,7 +78,7 @@ addStartUps conf = conf { startupHook = startupHook', manageHook = manageHook' }
         tell $ manageHook conf
 
 myStartupHook = do
-  io $ tryWriteKeyBindingsCache =<< relToHomeDir ".cache/xmonad-bindings"
+    io $ tryWriteKeyBindingsCache =<< relToHomeDir ".cache/xmonad-bindings"
 
 myLayoutHook = avoidStruts . smartBorders
              $   named "left" (Tall 1 incr ratio)

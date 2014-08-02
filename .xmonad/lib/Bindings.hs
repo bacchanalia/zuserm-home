@@ -24,8 +24,7 @@ testConfig = defaultConfig{ layoutHook = Layout $ layoutHook defaultConfig
                           , workspaces = workspaceNames }
 
 tryWriteKeyBindingsCache file = writeKeyBindingsCache file `catchIOError` print
-writeKeyBindingsCache file = writeFile file fmt
-  where fmt = prettyBindingsCL $ keyBinds testConfig
+writeKeyBindingsCache = flip writeFile $ prettyBindingsCL $ keyBinds testConfig
 
 myMouseBindings = M.fromList . bwBindList . mouseBinds
 myKeyBindings   = M.fromList . bwBindList . keyBinds
