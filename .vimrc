@@ -89,7 +89,7 @@ imap <F5> <ESC>:1wincmd<space>w<CR>:w<CR>:RUN<CR>li
 """Clipboard"""
 map <C-y> "+y
 map <C-p> "+p
-map <A-p> "*p
+map <F9>  "*p
 
 nmap <F7>      "+y
 imap <F7> <ESC>"+yi
