@@ -14,6 +14,7 @@ import qualified Data.Foldable as F
 import Data.Map ((!))
 import qualified Data.Map as M
 import Data.Maybe
+import System.IO.Error (catchIOError)
 
 import Bindings.Keys
 import Bindings.Writer
@@ -21,6 +22,10 @@ import Bindings.Writer
 workspaceNames = map show [1..9]
 testConfig = defaultConfig{ layoutHook = Layout $ layoutHook defaultConfig
                           , workspaces = workspaceNames }
+
+tryWriteKeyBindingsCache file = writeKeyBindingsCache file `catchIOError` print
+writeKeyBindingsCache file = writeFile file fmt
+  where fmt = prettyBindingsCL $ keyBinds testConfig
 
 myMouseBindings = M.fromList . bwBindList . mouseBinds
 myKeyBindings   = M.fromList . bwBindList . keyBinds

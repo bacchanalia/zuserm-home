@@ -18,6 +18,7 @@ import System.Taffybar.Hooks.PagerHints (pagerHints)
 
 import Control.Concurrent (threadDelay)
 import Data.List (isInfixOf)
+import System.Directory (getHomeDirectory)
 
 staticAssert (null mouseOverlaps && null keyOverlaps) . execWriter $ do
     tell "Error: Overlap in bindings\n"
@@ -31,9 +32,9 @@ main = xmonad . ewmh . pagerHints . addStartUps $ defaultConfig
     , focusedBorderColor = "#dc322f"
     , borderWidth        = 2
 
-    -- , startupHook        =
-    , manageHook         = myManageHook <+> manageDocks
+    , startupHook        = myStartupHook
     , layoutHook         = myLayoutHook
+    , manageHook         = myManageHook <+> manageDocks
 
     , workspaces         = workspaceNames
     , keys               = myKeyBindings
@@ -44,6 +45,8 @@ main = xmonad . ewmh . pagerHints . addStartUps $ defaultConfig
     -- , handleEventHook    =
     -- , modMask            =
     }
+
+relToHomeDir file = fmap (++ "/" ++ file) getHomeDirectory
 
 spawnUnless :: Query Bool -> String -> X ()
 spawnUnless prop cmd = withWindowSet $ \ss -> do
@@ -72,17 +75,20 @@ addStartUps conf = conf { startupHook = startupHook', manageHook = manageHook' }
         forM startups $ \(ws,   _, cond) -> cond ~~> doShift ws
         tell $ manageHook conf
 
-myManageHook = execWriter $ do
-    title =? "Close Iceweasel"  ~~> restartFF
-    title =? "Close Firefox"    ~~> restartFF
-    title =? "npviewer.bin"     ~~> doFull
-    title =? "plugin-container" ~~> doFull
+myStartupHook = do
+  io $ tryWriteKeyBindingsCache =<< relToHomeDir ".cache/xmonad-bindings"
 
 myLayoutHook = avoidStruts . smartBorders
              $   named "left" (Tall 1 incr ratio)
              ||| named "top"  (Mirror $ Tall 1 incr ratio)
              ||| named "full" Full
   where incr = 5/100 ; ratio = 50/100
+
+myManageHook = execWriter $ do
+    title =? "Close Iceweasel"  ~~> restartFF
+    title =? "Close Firefox"    ~~> restartFF
+    title =? "npviewer.bin"     ~~> doFull
+    title =? "plugin-container" ~~> doFull
 
 restartFF = do
     w <- ask
