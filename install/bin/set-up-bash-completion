@@ -19,6 +19,7 @@ sub main(@) {
     'spawn' => complete("_root_command", qw(s spawn spawnex spawnexsudo)),
     'mnt' => complete("_mntnames", qw(mnt mnto)),
     'update-repo' => complete("_repo_lists", qw(update-repo)),
+    'xmonad-bindings' => complete("_xmonad_bindings", qw(xmonad-bindings xmb)),
   };
 
   for my $file(keys %$files){
@@ -41,8 +42,8 @@ sub getFctImpls(){
     "_ssrun" => '{
       local cur
       cur="${COMP_WORDS[COMP_CWORD]}"
-      scriptNames="$(ssrun runsub getScriptNames)"
-      subNames="$(ssrun runsub getSubNames)"
+      scriptNames="$(ssrun runsub getScriptNames 2>/dev/null)"
+      subNames="$(ssrun runsub getSubNames 2>/dev/null)"
 
       if [ ${#COMP_WORDS[@]} == 2 ]; then
         COMPREPLY=( $(compgen -W "$scriptNames" -- $cur) )
@@ -97,6 +98,14 @@ sub getFctImpls(){
         | sort \
       ))
       return 0
+    }',
+
+    "_xmonad_bindings" => '{
+      local cur
+      cur="${COMP_WORDS[COMP_CWORD]}"
+      words=$( xmonad-bindings --bash-complete "$COMP_LINE" "$COMP_POINT" )
+
+      COMPREPLY=( $(compgen -W "$words" -- $cur) )
     }',
   };
 }

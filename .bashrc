@@ -77,6 +77,7 @@ function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
+function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
 function grep         { command grep --color=auto "$@"; }
 function hat          { highlight --out-format=ansi --force "$@"; }
@@ -91,6 +92,7 @@ function snapshot     { backup --snapshot "$@"; }
 function qgroups-info { backup --info --quick --sort-by=size "$@"; }
 function escape-pod   { ~/.src-cache/escapepod/escape-pod-tool --escapepod "$@"; }
 function podcastle    { ~/.src-cache/escapepod/escape-pod-tool --podcastle "$@"; }
+function pseudopod    { ~/.src-cache/escapepod/escape-pod-tool --pseudopod "$@"; }
 
 function spawn        { "$@" & disown ; }
 function spawnex      { "$@" & disown && exit 0 ; }
