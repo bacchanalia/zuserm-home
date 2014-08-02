@@ -77,6 +77,7 @@ function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
+function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
 function grep         { command grep --color=auto "$@"; }
 function hat          { highlight --out-format=ansi --force "$@"; }
