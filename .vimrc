@@ -133,7 +133,7 @@ autocmd! BufNewFile * call LoadTemp()
 
 
 let g:RUNwin = 1
-let g:RUNsize = 5
+let g:RUNsize = 20
 command -nargs=* RUN call RUN(<f-args>)
 function RUN(...)
     1wincmd w
