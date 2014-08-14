@@ -112,6 +112,14 @@ sub getFctImpls(){
       COMPREPLY=( $(compgen -W "$words" -- $cur) )
     }',
 
+    "_bgset" => '{
+      local cur
+      cur="${COMP_WORDS[COMP_CWORD]}"
+      words=$( bgset --bash-complete "$COMP_LINE" "$COMP_POINT" )
+
+      COMPREPLY=( $(compgen -W "$words" -- $cur) )
+    }',
+
     "_xmonad_bindings" => '{
       local cur
       cur="${COMP_WORDS[COMP_CWORD]}"
