@@ -133,14 +133,14 @@ autocmd! BufNewFile * call LoadTemp()
 
 
 let g:RUNwin = 1
-let g:RUNsize = 5
+let g:RUNsize = 20
 command -nargs=* RUN call RUN(<f-args>)
 function RUN(...)
     1wincmd w
     let interpreter = strpart(getline(1),2)
     let abspath = expand("%:p")
     let arguments = join(a:000, " ")
-    let call = interpreter . " " . abspath . " " . arguments
+    let call = interpreter . " \"" . abspath . "\" " . arguments
     let perlexp = "print qq(\n) . q(~)x64 . qq(\n) . <>;"
     if winnr("$") == 1
         below new
