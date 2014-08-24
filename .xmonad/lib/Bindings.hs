@@ -96,6 +96,11 @@ shortcuts conf = "Shortcuts" @@ do
         "Pidgin"        @@ mCA   xK_p    #! "pidgin"
         "Transmission"  @@ mCA   xK_t    #! "transmission-gtk"
         "FBReader"      @@ mCA   xK_b    #! "fbreader"
+    "N9"            @@ do
+        "lock"          @@ mC    xK_F12  #! "n9 -b lock"
+        "dontgosleep"   @@ mCS   xK_F12  #! "n9 -s dontgosleep"
+        "vnc landscape" @@ mC    xK_F11  #! "n9 -vnc"
+        "vnc portrait"  @@ mC    xK_F10  #! "n9 -vnc -rotate 0"
   where
     xK_Think = xK_KP_Insert
     xK_VolUp = xK_KP_Add
