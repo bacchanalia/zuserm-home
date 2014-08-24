@@ -112,6 +112,7 @@ fontconfig/
 .libreoffice/
 printers/
 .pulse/
+.rpmdb/
 .sane/
 .subversion
 .tor/
