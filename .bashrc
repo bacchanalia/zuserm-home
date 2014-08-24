@@ -20,7 +20,7 @@ if [ "$TERM" == "rxvt" ]; then
 fi
 
 if [ -n "PS1" ]; then
-  PS1="\[\033[G\]$PS1"
+  PS1="\[\033[G\]\t|\u@\h:\w"'$(__git_ps1 "|%.2s")'"$ "
 fi
 
 pathAppend ()  { for x in $@; do pathRemove $x; export PATH="$PATH:$x"; done }
