@@ -66,12 +66,12 @@ for cmd in wconnect wauto tether resolv \
 do alias $cmd="sudo $cmd"; done
 
 alias time="command time"
-alias mkdir="mkdir -p"
 alias :l='ghci'
 alias :h='man'
 alias :q='exit'
 alias :r='. /etc/profile; . ~/.bashrc;'
 
+function mkdir        { mkdir -p "$@"; }
 function vol          { pulse-vol "$@"; }
 function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
@@ -94,12 +94,19 @@ function escape-pod   { ~/.src-cache/escapepod/escape-pod-tool --escapepod "$@";
 function podcastle    { ~/.src-cache/escapepod/escape-pod-tool --podcastle "$@"; }
 function pseudopod    { ~/.src-cache/escapepod/escape-pod-tool --pseudopod "$@"; }
 
-function spawn        { "$@" & disown ; }
-function spawnex      { "$@" & disown && exit 0 ; }
-function vims         { vim `which $1` ; }
+function spawn        { "$@" & disown; }
+function spawnex      { "$@" & disown && exit 0; }
+function s            { "$@" & disown; }
+function sx           { "$@" & disown && exit 0; }
+function vims         { vim `which $1`; }
 
 function cbi          { spawn chromium-browser --incognito "$@"; }
-function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf ; }
+function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf; }
+
+# common typos
+function mkdit        { mkdir "$@"; }
+function cim          { vim "$@"; }
+function bim          { vim "$@"; }
 
 function execAlarm() {
   $@
