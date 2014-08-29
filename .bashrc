@@ -66,12 +66,12 @@ for cmd in wconnect wauto tether resolv \
 do alias $cmd="sudo $cmd"; done
 
 alias time="command time"
+alias mkdir="mkdir -p"
 alias :l='ghci'
 alias :h='man'
 alias :q='exit'
 alias :r='. /etc/profile; . ~/.bashrc;'
 
-function mkdir        { mkdir -p "$@"; }
 function vol          { pulse-vol "$@"; }
 function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
