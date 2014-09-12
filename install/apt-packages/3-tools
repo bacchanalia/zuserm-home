@@ -1,6 +1,6 @@
 acpi
-android-tools-adb
 alien
+android-tools-adb
 aspell
 aspell-en
 atomicparsley
@@ -32,6 +32,7 @@ kernel-package
 libaudio-wma-perl
 libav-tools
 libgdbm-dev
+libimage-exiftool-perl
 libnotify-bin
 librsvg2-bin
 libtext-csv-perl
@@ -68,9 +69,9 @@ sqlite3
 telnet
 testdisk
 time
-toshset
 tor
 tor-arm
+toshset
 unetbootin
 units
 vmpk
@@ -86,6 +87,6 @@ xdotool
 xinput
 xkbset
 xmacro
-xsel
 xprintidle
+xsel
 xtightvncviewer
