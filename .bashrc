@@ -50,6 +50,7 @@ pathPrepend  \
   $HOME/.cabal-$GHC_HP_VERSION/bin  \
   $HOME/.ghc-$GHC_HP_VERSION/bin    \
   $HOME/bin                         \
+  $HOME/Ork/bin                     \
 ;
 
 export HD='/media/Charybdis/zuserm'
