@@ -43,6 +43,11 @@ wvdial.conf
 #media, binaries, data
 .icedove/
 .mozilla/
+.pcsx/*
+!.pcsx/pcsx.cfg
+!.pcsx/plugins/
+.pcsx/plugins/*
+!.pcsx/plugins/*.cfg
 .purple/
 .thunderbird/
 .steam/
