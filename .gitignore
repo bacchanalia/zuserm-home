@@ -87,6 +87,9 @@ fontconfig/
 .config/*
 !.config/backup.conf
 !.config/ipmagic/
+!.config/pulse
+.config/pulse/*
+!.config/pulse/default.pa
 !.config/taffybar/taffybar.hs
 !.config/taffybar/lib/
 !.config/tpbattstat.conf
