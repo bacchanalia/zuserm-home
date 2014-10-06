@@ -42,6 +42,7 @@ wvdial.conf
 
 #media, binaries, data
 .icedove/
+.klomp/db
 .mozilla/
 .pcsx/*
 !.pcsx/pcsx.cfg
@@ -57,6 +58,8 @@ wvdial.conf
 #state
 .dbus/
 .gksu.lock
+.klomp/*
+!.klomp/lib
 
 #logs, history, caches
 .local/
@@ -105,12 +108,6 @@ fontconfig/
 .icedtea/
 .lesshst
 .java/
-.klompcur
-.klompdb
-.klomphistory
-.klomplibhistory
-.klomplist
-.klomp-playlist
 .gconf/
 .gconfd/
 .ghc*/
