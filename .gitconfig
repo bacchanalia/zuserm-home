@@ -3,6 +3,7 @@
     email = mikezuser@gmail.com
 [core]
     pager = less
+    quotepath = true
 [alias]
     a = add
     s = status
