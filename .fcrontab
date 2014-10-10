@@ -9,16 +9,14 @@ PATH=/home/zuserm/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sb
 #30 7 * * * alarm -ov 80 lba  ; fcron-job-toggle m0 #m0
 #40 7 * * * alarm -ov 80 dont ; fcron-job-toggle m1 #m1
 
-0  5 * * * term -r -e 'execPing --timeout=60 --ipmagic=n9 backup-phone'
-15 5 * * * term -r -e 'sudo backup --snapshot /home DAILY; read'
-15 5 * * * term -r -e 'sudo backup --snapshot /media/Charybdis DAILY; read'
+15 5 * * * term -r -e 'execPing --timeout=60 --ipmagic=n9 backup-phone'
+15 5 * * * term -r -e 'sudo backup --snapshot /home DAILY; sudo backup --cleanup=30 /home DAILY'
+15 5 * * * term -r -e 'sudo backup --snapshot /media/Charybdis DAILY; sudo backup --cleanup=30 /media/Charybdis DAILY'
 30 5 * * * term -r -e 'sudo backup home'
 30 5 * * * term -r -e 'sudo backup Charybdis'
 
 @ 5        sudo backup --snapshot /home FIVEMIN
 @hourly    sudo backup --snapshot /home HOURLY
 
-@hourly sudo backup --cleanup=30 /home FIVEMIN
-@hourly sudo backup --cleanup=30 /home HOURLY
-@hourly sudo backup --cleanup=30 /home DAILY
-@hourly sudo backup --cleanup=30 /media/Charybdis DAILY
+@ 5        sudo backup --cleanup=30 /home FIVEMIN
+@hourly    sudo backup --cleanup=30 /home HOURLY
