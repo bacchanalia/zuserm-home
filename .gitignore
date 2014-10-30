@@ -43,7 +43,6 @@ wvdial.conf
 
 #media, binaries, data
 .icedove/
-.klomp/db
 .mozilla/
 .pcsx/*
 !.pcsx/pcsx.cfg
