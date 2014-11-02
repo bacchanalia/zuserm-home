@@ -95,6 +95,7 @@ function escape-pod   { ~/.src-cache/escapepod/escape-pod-tool --escapepod "$@";
 function podcastle    { ~/.src-cache/escapepod/escape-pod-tool --podcastle "$@"; }
 function pseudopod    { ~/.src-cache/escapepod/escape-pod-tool --pseudopod "$@"; }
 function j            { fcron-job-toggle "$@"; }
+function mp           { mplayer "$@"; }
 
 function spawn        { "$@" & disown; }
 function spawnex      { "$@" & disown && exit 0; }
