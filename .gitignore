@@ -115,6 +115,7 @@ fontconfig/
 !.gimp*/plug-ins/
 .gnome2/
 .libreoffice/
+.mono
 printers/
 .pulse/
 .rpmdb/
