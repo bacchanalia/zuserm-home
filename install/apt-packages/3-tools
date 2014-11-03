@@ -4,6 +4,7 @@ android-tools-adb
 aspell
 aspell-en
 atomicparsley
+autossh
 axel
 bluetooth
 bluez
@@ -24,6 +25,7 @@ geeqie
 gnome-disk-utility
 gparted
 gvfs-bin
+haveged
 highlight
 hwinfo
 id3v2
