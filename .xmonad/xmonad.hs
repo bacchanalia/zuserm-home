@@ -66,10 +66,10 @@ addStartUps conf = conf { startupHook = startupHook', manageHook = manageHook' }
   where
     osw ws cmd cond = tell [(ws, cmd, cond)]
     startups = execWriter $ do
-        osw "1" "execPing --timeout 6 pidgin" $ className =? "Pidgin"
-        osw "8" "gnucash"                     $ className =? "Gnucash"
-        osw "9" "icedove"                     $ className =? "Icedove"
-        osw "9" "term vim TODO/TODO"          $ command   =~? "TODO/TODO"
+        osw "1" "execPing --timeout=15 pidgin" $ className =? "Pidgin"
+        osw "8" "gnucash"                      $ className =? "Gnucash"
+        osw "9" "icedove"                      $ className =? "Icedove"
+        osw "9" "term vim TODO/TODO"           $ command   =~? "TODO/TODO"
     startupHook' = do
         forM startups $ \( _, cmd, cond) -> spawnUnless cond cmd
         startupHook conf
