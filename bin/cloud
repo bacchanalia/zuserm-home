@@ -5,23 +5,32 @@ use Time::HiRes qw(sleep);
 
 my $logDir = "$ENV{HOME}/.cyphertite/logs";
 
+my $home = $ENV{HOME};
+$home = "/media/$home" if -d "/media/$home";
+
 my $backups = {
-  backgrounds => '/home/wolke/Desktop/Backgrounds',
-  dcim => '/home/wolke/Desktop/DCIM',
-  documents => '/home/wolke/Desktop/Documents',
-  games => '/home/wolke/Desktop/Games',
-  music => '/media/stuff/Music',
-  n9 => '/home/wolke/Code/n9',
-  pictures => '/home/wolke/Desktop/Pictures',
-  records => '/home/wolke/Desktop/Records',
+  backgrounds => "$home/Desktop/Backgrounds",
+  dcim => "$home/Desktop/DCIM",
+  documents => "$home/Desktop/Documents",
+  games => "$home/Desktop/Games",
+  music => "/media/stuff/Music",
+  n9 => "$home/Code/n9",
+  pictures => "$home/Desktop/Pictures",
+  records => "$home/Desktop/Records",
+  pidgin => "$home/.purple",
+  thunderbird => "$home/.thunderbird",
 };
 
+sub handleCtfile($$);
 sub getLatestLogFile($);
 sub formatStatus($$);
 sub run(@);
 sub bashComplete($$);
 
 my $usage = "Usage:
+  $0 --all
+     run 'ct-log NAME DIR' for all (NAME => DIR) pairs
+
   $0 NAME
      run 'ct-log NAME DIR'
 
@@ -46,11 +55,23 @@ sub main(@){
     exit 0;
   }
 
-  my $cmd = shift if @_ > 0 and $_[0] =~ /^(--log|--status)$/;
+  my $cmd = shift if @_ > 0 and $_[0] =~ /^(--all|--log|--status)$/;
   $cmd = '' if not defined $cmd;
 
-  die $usage if @_ != 1 or not defined $$backups{$_[0]};
-  my $ctfile = shift;
+  if($cmd =~ /^(--all)$/){
+    for my $ctfile(sort keys %$backups){
+      print "\n\n===$ctfile===\n\n";
+      handleCtfile $ctfile, "";
+    }
+  }else{
+    my $ctfile = shift;
+    handleCtfile $ctfile, $cmd;
+  }
+}
+
+sub handleCtfile($$){
+  my ($ctfile, $cmd) = @_;
+  die $usage if not defined $ctfile or not defined $$backups{$ctfile};
 
   my $dir = $$backups{$ctfile};
   if($dir !~ /^(.+)\/([^\/]+)$/){
@@ -65,30 +86,32 @@ sub main(@){
 
   if($cmd =~ /^(--status)$/){
     print formatStatus($ctfile, $child);
-    exit 0;
   }elsif($cmd =~ /^(--log)$/){
     my $log = getLatestLogFile($ctfile);
     die "no log exists for $ctfile\n" if not defined $log;
     run "tail", "-F", $log;
-    exit 0;
+  }else{
+    my $oldLog = getLatestLogFile($ctfile);
+    $oldLog = "" if not defined $oldLog;
+
+    my @cmd = ("ct-log", $ctfile, $child);
+    run "screen-cmd", @cmd;
+
+    my $newLog = getLatestLogFile($ctfile);
+
+    if(not defined $newLog or $newLog eq $oldLog){
+      sleep 0.5;
+      $newLog = getLatestLogFile($ctfile);
+    }
+    if(not defined $newLog or $newLog eq $oldLog){
+      die "no log found for $ctfile\n";
+    }
+    my $screenPid = `screen-cmd --pid @cmd`;
+    chomp $screenPid;
+    my $pidArg = $screenPid =~ /^\d+$/ ? "--pid=$screenPid" : "";
+
+    run "tail", "-F", $pidArg, $newLog;
   }
-
-  my $oldLog = getLatestLogFile($ctfile);
-  $oldLog = "" if not defined $oldLog;
-
-  run "screen-cmd", "ct-log", $ctfile, $child;
-
-  my $newLog = getLatestLogFile($ctfile);
-
-  if(not defined $newLog or $newLog eq $oldLog){
-    sleep 0.5;
-    $newLog = getLatestLogFile($ctfile);
-  }
-  if(not defined $newLog or $newLog eq $oldLog){
-    die "no log found for $ctfile\n";
-  }
-
-  run "tail", "-F", $newLog;
 }
 
 sub getLatestLogFile($){
@@ -128,6 +151,14 @@ sub formatStatus($$){
     "Reconnected",
   );
 
+  my $finished = 0;
+  for my $line(@lines){
+    if($line =~ /^Total Time/){
+      $finished = 1;
+      last;
+    }
+  }
+
   my @files = @lines;
   s/($ignoredRegex).*// foreach @files;
   @files = grep {$_ !~ /^\s*$/} @files;
@@ -140,21 +171,30 @@ sub formatStatus($$){
   if(@failedFiles > 0){
     $msg .= "files not found:\n" . join("\n", @failedFiles) . "\n";
   }
-  my $fileCount = `find $dir -type f -not -type l | wc -l`;
+  $dir =~ s/'/'\\''/g;
+  my $fileCount = `find '$dir' -type f -not -type l | wc -l`;
   my @okFiles = grep {-f $_} @files;
-  print "file count: " . scalar(@okFiles) . " / $fileCount";
-  $msg .= "no files handled\n" if @okFiles == 0;
+
   my $size = 0;
-  my $du = `du -s $dir`;
+  my $du = `du -s -b '$dir'`;
   my $total = $1 if $du =~ /^(\d+)/;
   for my $file(@okFiles){
-    $file =~ s/'/'\\''/g;
-    my $du = `du -s '$file'`;
-    $size += $1 if $du =~ /^(\d+)/;
+    my $fsize = -s $file if -f $file;
+    $size += $fsize;
   }
-  if(defined $size and defined $total){
-    my $percent = int(100*$size/$total);
-    $msg .= "size: $percent\%   ${size}k / ${total}k\n";
+  $msg .= "FINISHED\n" if $finished;
+  $msg .= "no files handled\n" if @okFiles == 0;
+  if(defined $fileCount and $fileCount > 0){
+    $msg .= sprintf "files: %.1f%%   %d / %d\n",
+      100*@okFiles/$fileCount,
+      scalar(@okFiles),
+      $fileCount;
+  }
+  if(defined $total and $total > 0){
+    $msg .= sprintf "size : %.1f%%   %d / %d\n",
+      100*$size/$total,
+      $size,
+      $total;
   }
   return $msg;
 }
@@ -178,6 +218,7 @@ sub bashComplete($$){
   my @names = sort keys %$backups;
 
   my @cmds = qw(
+    --all
     --log
     --status
     --bash-complete
