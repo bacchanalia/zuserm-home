@@ -60,6 +60,7 @@ wvdial.conf
 .gksu.lock
 .klomp/*
 !.klomp/lib
+.pulse-enabled
 
 #logs, history, caches
 .local/
