@@ -43,6 +43,7 @@ wvdial.conf
 
 #media, binaries, data
 .icedove/
+.kodi/
 .mozilla/
 .pcsx/*
 !.pcsx/pcsx.cfg
