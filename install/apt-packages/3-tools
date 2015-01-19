@@ -13,6 +13,7 @@ cdparanoia
 cuetools
 curl
 daemon
+dcfldd
 exfalso
 expect
 fakeroot
@@ -36,12 +37,14 @@ lftp
 libaudio-wma-perl
 libav-tools
 libfile-fcntllock-perl
+libdate-manip-perl
 libgdbm-dev
 libimage-exiftool-perl
 libncurses5-dev
 libnotify-bin
 librsvg2-bin
 libtext-csv-perl
+libtime-out-perl
 libtool
 libxslt1-dev
 lltag

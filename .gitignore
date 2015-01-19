@@ -76,6 +76,7 @@ wvdial.conf
 fontconfig/
 .fontconfig
 .gstreamer-0.10/
+.kde/
 .bash_history
 .src-cache/
 .viminfo

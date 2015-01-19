@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Klomp(klompW, main) where
 import Clickable (clickable)
-import Label (labelW)
+import Label (labelW, mainLabel)
 import Utils (fgbg, padL, padR, isRunning, chompFile, readProc)
 
 import Codec.Binary.UTF8.String (utf8Encode, decodeString)
@@ -12,6 +12,9 @@ import qualified Data.Vector as Vector
 import qualified Data.Text.Lazy as T
 import Data.Text.Lazy.Encoding (encodeUtf8)
 
+main = mainLabel klompReader
+klompW = clickable clickL clickM clickR =<< labelW klompReader
+
 rowLength = 34
 gapOffset = 3
 sep = "…"
@@ -21,9 +24,6 @@ n9Prefix = "ň"
 clickL = Just "klomp-term --playlist"
 clickM = Just "klomp-cmd reset"
 clickR = Just "klomp-cmd stop"
-
-klompW = clickable clickL clickM clickR =<< labelW getMarkup
-main = putStrLn =<< getMarkup
 
 getKlompInfo remoteHost = do
   let ipMagic = case remoteHost of
@@ -39,7 +39,7 @@ getKlompInfo remoteHost = do
 
 coerceUtf8 = decodeString . utf8Encode
 
-getMarkup = do
+klompReader = do
   remoteHost <- chompFile "/tmp/klomp-bar"
   running <- isRunning "klomplayer"
   klompInfo <- getKlompInfo remoteHost

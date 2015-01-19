@@ -13,10 +13,12 @@ my $backups = {
   dcim => "$home/Desktop/DCIM",
   documents => "$home/Desktop/Documents",
   games => "$home/Desktop/Games",
+  stepmania => "$home/.stepmania-5.0",
   music => "/media/stuff/Music",
   n9 => "$home/Code/n9",
   pictures => "$home/Desktop/Pictures",
   records => "$home/Desktop/Records",
+  firefox => "$home/.mozilla",
   pidgin => "$home/.purple",
   thunderbird => "$home/.thunderbird",
 };
