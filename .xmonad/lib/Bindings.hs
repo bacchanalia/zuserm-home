@@ -92,6 +92,7 @@ shortcuts conf = "Shortcuts" @@ do
     "Applications"  @@ do
         "Firefox"       @@ mCA   xK_f    #! "firefox"
         "FF Private"    @@ mCAS  xK_f    #! "firefox -new-instance -P private"
+        "torbrowser"    @@ mCA   xK_v    #! "torbrowser-launcher"
         "Chrome"        @@ mCA   xK_c    #! "chromium --incognito"
         "Pidgin"        @@ mCA   xK_p    #! "pidgin"
         "Transmission"  @@ mCA   xK_t    #! "transmission-gtk"
