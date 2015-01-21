@@ -8,6 +8,7 @@ import XMonad.Layout.LayoutCombinators ( (|||), JumpToLayout(..))
 
 import XMonad.Hooks.EwmhDesktops (ewmh)
 import XMonad.Hooks.ManageDocks (avoidStruts, SetStruts(..), manageDocks)
+import XMonad.Hooks.ManageHelpers (doFullFloat, isFullscreen)
 import XMonad.Layout.Named (named)
 import XMonad.Layout.NoBorders (smartBorders)
 import XMonad.Util.Types (Direction2D(U,D,L,R))
@@ -18,7 +19,9 @@ import System.Taffybar.Hooks.PagerHints (pagerHints)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent (threadDelay)
+import Control.Monad (when)
 import Data.List (isInfixOf)
+import Data.Monoid (All (All))
 import System.FilePath ((</>))
 import System.Directory (getHomeDirectory)
 
@@ -34,6 +37,7 @@ main = xmonad . ewmh . pagerHints . addStartUps $ defaultConfig
     , focusedBorderColor = "#dc322f"
     , borderWidth        = 2
 
+    , handleEventHook    = myEventHook
     , startupHook        = myStartupHook
     , layoutHook         = myLayoutHook
     , manageHook         = myManageHook <+> manageDocks
@@ -87,6 +91,7 @@ myLayoutHook = avoidStruts . smartBorders
   where incr = 5/100 ; ratio = 50/100
 
 myManageHook = execWriter $ do
+    isFullscreen ~~> doFullFloat
     title =? "Close Iceweasel"  ~~> restartFF
     title =? "Close Firefox"    ~~> restartFF
     title =? "npviewer.bin"     ~~> doFull
@@ -118,3 +123,38 @@ removeStruts = SetStruts [] [U,D,L,R]
 
 doView workspace = doF $ Stk.view workspace
 doShiftView workspace = doShift workspace <+> doView workspace
+
+
+-- Helper functions to fullscreen the window
+fullFloat, tileWin :: Window -> X ()
+fullFloat w = windows $ Stk.float w r
+    where r = Stk.RationalRect 0 0 1 1
+tileWin w = windows $ Stk.sink w
+
+myEventHook :: Event -> X All
+myEventHook (ClientMessageEvent _ _ _ dpy win typ dat) = do
+  state <- getAtom "_NET_WM_STATE"
+  fullsc <- getAtom "_NET_WM_STATE_FULLSCREEN"
+  isFull <- runQuery isFullscreen win
+
+  -- Constants for the _NET_WM_STATE protocol
+  let remove = 0
+      add = 1
+      toggle = 2
+
+      -- The ATOM property type for changeProperty
+      ptype = 4
+
+      action = head dat
+
+  when (typ == state && (fromIntegral fullsc) `elem` tail dat) $ do
+    when (action == add || (action == toggle && not isFull)) $ do
+         io $ changeProperty32 dpy win state ptype propModeReplace [fromIntegral fullsc]
+         fullFloat win
+    when (head dat == remove || (action == toggle && isFull)) $ do
+         io $ changeProperty32 dpy win state ptype propModeReplace []
+         tileWin win
+
+  -- It shouldn't be necessary for xmonad to do anything more with this event
+  return $ All False
+myEventHook _ = return $ All True

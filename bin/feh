@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Time::HiRes qw(sleep);
+
+sub main(@){
+  my $pid = fork;
+  if($pid == 0){
+    sleep 0.5;
+    exec "keys-to-window", "feh";
+  }else{
+    my @args = @_;
+    @args = ("-Z", "-F") if @args == 0;
+    system "/usr/bin/feh", @_;
+    system "kill", $pid;
+    system "reset";
+  }
+}
+
+&main(@ARGV);

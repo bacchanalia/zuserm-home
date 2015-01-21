@@ -78,6 +78,7 @@ function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
+function f            { feh "$@"; }
 function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
 function grep         { command grep --color=auto "$@"; }
@@ -122,10 +123,14 @@ function execAlarm() {
   bash -c "exit $exitCode"
 }
 
-function update-repo  { sudo apt-get update \
-                         -o Dir::Etc::sourcelist="sources.list.d/$1" \
-                         -o Dir::Etc::sourceparts="-" \
-                         -o APT::Get::List-Cleanup="0"
+function update-repo {
+  repo="$1"
+  shift
+  sudo apt-get update \
+    -o Dir::Etc::sourcelist="sources.list.d/$repo" \
+    -o Dir::Etc::sourceparts="-" \
+    -o APT::Get::List-Cleanup="0" \
+    "$@"
 }
 
 function git() {

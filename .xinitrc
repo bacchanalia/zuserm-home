@@ -4,7 +4,7 @@ sudo wauto -p &
 ~/.xconfig
 (sleep 10; xconfig) &
 
-pulseaudio --start &
+pulse-enable on
 sudo bluetooth off &
 sudo fan auto &
 taffybar-restart --daemon --quiet
