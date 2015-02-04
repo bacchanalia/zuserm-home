@@ -36,6 +36,7 @@ Videos
 .pki/
 .ICEauthority
 .pulse-cookie
+.secrets
 wifi.conf
 wifi-auto.conf
 wvdial.conf
