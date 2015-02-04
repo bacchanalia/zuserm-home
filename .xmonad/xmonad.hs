@@ -91,11 +91,12 @@ myLayoutHook = avoidStruts . smartBorders
   where incr = 5/100 ; ratio = 50/100
 
 myManageHook = execWriter $ do
-    isFullscreen ~~> doFullFloat
-    title =? "Close Iceweasel"  ~~> restartFF
-    title =? "Close Firefox"    ~~> restartFF
-    title =? "npviewer.bin"     ~~> doFull
-    title =? "plugin-container" ~~> doFull
+    isFullscreen                      ~~> doFullFloat
+    title =? "Close Iceweasel"        ~~> restartFF
+    title =? "Close Firefox"          ~~> restartFF
+    title =? "npviewer.bin"           ~~> doFloat
+    title =? "plugin-container"       ~~> doFloat
+    title =? "Assault Android Cactus" ~~> doFloat
 
 restartFF = do
     w <- ask
