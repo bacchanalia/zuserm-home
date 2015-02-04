@@ -112,6 +112,25 @@ function mkdit        { mkdir "$@"; }
 function cim          { vim "$@"; }
 function bim          { vim "$@"; }
 
+# games
+function mkSteamFuncs {
+  function mkSteamFuncs_getAppManifestValue {
+    local app_path key
+    read  app_path key <<< "$@"
+    cat $app_path | egrep "^[[:space:]]*\"$key\"" \
+                  | sed "s/^[[:space:]]*\"$key\"[[:space:]]*\"//" \
+                  | sed "s/\"[[:space:]]*\$//"
+  }
+
+  for app_path in $(ls  ~/.steam/steamapps/*.acf); do
+    local app_id=`mkSteamFuncs_getAppManifestValue "$app_path" "appid"`
+    local app_name=`mkSteamFuncs_getAppManifestValue "$app_path" "name"`
+    local app_name_clean=`echo -n $app_name | tr -c [[:alnum:]] _`
+    eval "function steam_$app_name_clean { steam steam://rungameid/$app_id ; }"
+  done
+}
+mkSteamFuncs
+
 function execAlarm() {
   $@
   exitCode="$?"
