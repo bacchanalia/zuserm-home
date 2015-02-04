@@ -86,8 +86,8 @@ function hat          { highlight --out-format=ansi --force "$@"; }
 function codegrep     { grep -RIhA "$@"; }
 function rmplayer     { rm "$@"; }
 function tags         { tags id3v2 -l "$@"; }
-function lk           { sudo chown -R root. "$@"; }
-function ulk          { sudo chown -R zuserm. "$@"; }
+function enc          { gpg -r "$USER" -o "$@.gpg" -e "$@"; }
+function dec          { gpg -o `basename "$@" .gpg` -d "$@"; }
 function printers     { sudo system-config-printer "$@"; }
 function evi          { spawn evince "$@"; }
 function snapshot     { backup --snapshot "$@"; }
