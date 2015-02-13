@@ -1,6 +1,6 @@
 sudo mnt --other -m Charybdis
 
-bgset seconds
+bgset GardenofEarthlyDelights
 xsetroot -cursor_name left_ptr
 for x in $HOME/.xresources-*; do xrdb -merge "$x"; done
 
