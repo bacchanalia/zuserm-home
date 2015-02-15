@@ -107,6 +107,9 @@ function vims         { vim `which $1`; }
 function cbi          { spawn chromium-browser --incognito "$@"; }
 function tex2pdf      { pdflatex -halt-on-error "$1".tex && evince "$1".pdf; }
 
+function first        { ls "$@" | head -1; }
+function last         { ls "$@" | tail -1; }
+
 # common typos
 function mkdit        { mkdir "$@"; }
 function cim          { vim "$@"; }
