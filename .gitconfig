@@ -7,7 +7,7 @@
 [alias]
     a = add
     s = ! \
-        git status && \
+        git status $@ && \
         stashes=`git stash list | wc -l` && \
         [ $stashes -gt 0 ] && echo $stashes stashes && \
         true
