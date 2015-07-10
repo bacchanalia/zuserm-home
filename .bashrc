@@ -4,6 +4,7 @@
 shopt -s histappend
 HISTCONTROL=ignoredups:ignorespace:ignoreboth
 HISTSIZE=1000000
+HISTTIMEFORMAT="%F %T "
 
 export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64/
 
