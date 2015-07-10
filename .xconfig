@@ -1,4 +1,5 @@
 sudo mnt --other -m Charybdis
+mkdir /tmp/downloads 2>&0
 
 bgset GardenofEarthlyDelights
 xsetroot -cursor_name left_ptr
