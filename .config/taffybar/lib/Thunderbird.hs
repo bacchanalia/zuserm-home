@@ -32,11 +32,7 @@ clickL = Just $ exec
 clickM = Just $ exec ++ " --compose"
 clickR = Just $ "pkill " ++ process
 
-accounts = M.fromList [ ("Gmail", "G")
-                      , ("LilleGroup", "L")
-                      , ("AOL - LiberiFataliVIII", "A")
-                      , ("teleshoes", "T")
-                      ]
+accounts = M.fromList [ ("gmail", "G") ]
 
 getImage h = do
   tbRunning <- isRunning process
