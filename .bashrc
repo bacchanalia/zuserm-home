@@ -87,7 +87,7 @@ function hat          { highlight --out-format=ansi --force "$@"; }
 function codegrep     { grep -RIhA "$@"; }
 function rmplayer     { rm "$@"; }
 function tags         { tags id3v2 -l "$@"; }
-function enc          { gpg -r "$USER" -o "$@.gpg" -e "$@"; }
+function enc          { gpg -r "$USER" -o "$@.gpg" -e "$@"; rm "$@"; }
 function dec          { gpg -o `basename "$@" .gpg` -d "$@"; }
 function printers     { sudo system-config-printer "$@"; }
 function evi          { spawn evince "$@"; }
