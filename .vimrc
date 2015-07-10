@@ -10,6 +10,8 @@ set tabstop=2
 set softtabstop=2
 set mouse=a
 
+let g:GPGUseAgent=0
+
 set hlsearch
 "This unsets the "last search pattern" register by hitting return
 nnoremap <CR> :noh<CR>
