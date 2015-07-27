@@ -5,12 +5,11 @@ module Utils(
   regexMatch, regexAllMatches, regexGroups, regexFirstGroup,
   readInt, readDouble, printfReal, collectInts, padL, padR, chompAll,
   pollingGraphMain,
+  ifM,
   tryMaybe, millisTime, nanoTime, isRunning, chompFile, findName,
   systemReadLines, readProc, chompProc, procSuccess,
   procToChan, actToChanDelay, listToChan
 ) where
-import Prelude hiding (readFile)
-import System.IO.UTF8 (readFile)
 import Control.Concurrent (
   forkIO, threadDelay,
   Chan, writeChan, writeList2Chan, newChan)
@@ -103,6 +102,9 @@ pollingGraphMain delay reader = forever $ do
   values <- reader
   print $ map (printfReal "%.3f") values
   threadDelay $ round $ delay * 10^6
+
+ifM :: Monad m => m Bool -> m a -> m a -> m a
+ifM mTest mThen mElse = mTest >>= \test -> if test then mThen else mElse
 
 tryMaybe :: (IO a) -> IO (Maybe a)
 tryMaybe act = do

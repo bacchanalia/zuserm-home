@@ -34,7 +34,7 @@ loadImage :: Int -> String -> IO (Maybe Pixbuf)
 loadImage h name = tryMaybe $ pixbufNewFromFile =<< getImageFile h name
 
 
-addAlphaWhite = addAlpha $ Just (65535, 65535, 65535)
+addAlphaWhite = addAlpha $ Just (255, 255, 255)
 addAlphaBlack = addAlpha $ Just (0, 0, 0)
 
 addAlpha :: Maybe (Word8, Word8, Word8) -> Maybe Pixbuf -> IO (Maybe Pixbuf)
@@ -53,6 +53,7 @@ loadImages h = do
 getSpecial winTitle winClass
   | null winTitle && null winClass = Just "blank"
   | winTitle == "..." && winClass == "..." = Just "blank"
+  | winTitle ~~ "email-gui.py" = Just "qtemail"
   | winTitle ~~ "Tor Browser|Vidalia Control Panel" = Just "torbrowserbundle"
   | winTitle ~~ "^eScribe .*- Mozilla Firefox$" = Just "escribe"
   | winTitle ~~ " - VIM$" = Just "vim"

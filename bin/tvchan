@@ -4,7 +4,24 @@ use warnings;
 use POSIX ":sys_wait_h";
 use Time::HiRes qw(sleep time);
 
-my @ext = qw(mkv mp4 avi wmv m2ts);
+my @videoExt = qw(
+  mkv mks mk3d
+  avi
+  webm
+  flv
+  ogv
+  drc
+  mov qt
+  wmv
+  mp4 m4p m4v
+  mpg mpeg mpe mpv m2v m2s m1s
+  svi
+  3gp 3g2
+  divx
+  vob
+  m2ts
+);
+my @musicExt = qw(mp3 flac ogg m4a wma wav);
 
 my $msgLen = 60;
 my $mplayerConfFile = "/tmp/mplayer-tvchan.conf";
@@ -40,11 +57,21 @@ sub writeInputConf();
 sub writeMplayerConf();
 sub writeInputCommands(@);
 sub getProcLines(@);
+sub getProcLinesNoFail(@);
 
 my $usage = "Usage:
   $0 [OPTS] DIR [DIR ..]
 
   OPTS:
+  -s STRING
+    use imdb to filter files
+
+  -b
+    always start at the beginning of the file
+
+  -m
+    include (@musicExt) instead of just (@videoExt)
+
   --autoskip  | --autoskip=SECONDS
      start in autoskip mode, and optionally set the delay to SECONDS
        {default is $defaultAutoSkipDelay}
@@ -55,16 +82,27 @@ my $usage = "Usage:
 
 sub main(@){
   my $autoSkip = 0;
+  my $music = 0;
+  my $begin = 0;
   my $autoSkipDelay = $defaultAutoSkipDelay;
+  my $search;
   while(@_ > 0 and $_[0] =~ /^-/){
     my $arg = shift;
     if($arg =~ /^--autoskip(?:=(\d+))?$/){
       $autoSkip = 1;
       $autoSkipDelay = $1 if defined $1;
+    }elsif($arg =~ /^(-b)$/){
+      $begin = 1;
+    }elsif($arg =~ /^(-m)$/){
+      $music = 1;
+    }elsif($arg =~ /^(-s)$/ and @_ > 0){
+      $search = shift;
     }else{
       die $usage;
     }
   }
+
+  my @ext = $music ? (@videoExt, @musicExt) : (@videoExt);
 
   my @dirs = @_;
   die $usage if @dirs == 0;
@@ -74,10 +112,12 @@ sub main(@){
 
   my @cmd;
   push @cmd, "find";
+  push @cmd, "-L";
   for my $dir(@dirs){
     die "\"$dir\" is not a directory\n" if not -d $dir;
     push @cmd, $dir;
   }
+  @cmd = (@cmd, "-type", "f");
   push @cmd, "-false";
   for my $ext(@ext){
     push @cmd, ("-or", "-iname", "*.$ext");
@@ -85,6 +125,19 @@ sub main(@){
 
   my $files = getProcLines @cmd;
   chomp foreach @$files;
+
+  if(defined $search){
+    my $newFiles = [];
+    for my $file(@$files){
+      my $imdb = join '', @{getProcLinesNoFail("imdb", "-c", $file)};
+      if($imdb =~ /$search/i){
+        push @$newFiles, $file;
+      }
+    }
+    $files = $newFiles;
+    print "SELECTED:\n" . join "\n", @$files;
+  }
+
   my @history;
   my $index = 0;
   while(1){
@@ -93,7 +146,11 @@ sub main(@){
       ($file, $pos) = @{$history[$index]};
     }else{
       $file = getRandomEntry $files;
-      $pos = getRandomPos $file;
+      if($begin){
+        $pos = 0;
+      }else{
+        $pos = getRandomPos $file;
+      }
       push @history, [$file, $pos];
     }
 
@@ -209,10 +266,14 @@ sub writeInputCommands(@){
 }
 
 sub getProcLines(@){
+  my $lines = getProcLinesNoFail @_;
+  die "Error running \"@_\"\n" if $? != 0;
+  return $lines;
+}
+sub getProcLinesNoFail(@){
   open FH, "-|", @_;
   my @lines = <FH>;
   close FH;
-  die "Error running \"@_\"\n" if $? != 0;
   return \@lines;
 }
 

@@ -79,9 +79,10 @@ function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
-function f            { feh "$@"; }
+function f            { feh -ZF "$@"; }
 function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
+function gs           { g s; }
 function grep         { command grep --color=auto "$@"; }
 function hat          { highlight --out-format=ansi --force "$@"; }
 function codegrep     { grep -RIhA "$@"; }

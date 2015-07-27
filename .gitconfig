@@ -6,7 +6,13 @@
     quotepath = false
 [alias]
     a = add
-    s = status
+    s = ! \
+        cd ${GIT_PREFIX:-.} && \
+        git status $@ && \
+        stashes=`git stash list | wc -l` && \
+        [ $stashes -gt 0 ] && echo $stashes stashes && \
+        true
+    r = rebase --autostash
     c = commit
     cp = cherry-pick
     cpcon = cherry-pick --continue

@@ -60,6 +60,8 @@ shortcuts conf = "Shortcuts" @@ do
     "ghci"              @@ mA    xK_Think#! "term -acd ghci"
     "ghci"              @@ m_    xK_KPDel#! "term -acd ghci"
     "wabs"              @@ m_    xK_KPEnt#! "wauto"
+    "bgset --next"      @@ mW    xK_w    #! "bgset --next"
+    "bgset --prev"      @@ mWS   xK_w    #! "bgset --prev"
     "Screen Shot"       @@ m_    xK_Print#! "scrot-bag"
     "Invert Colors"     @@ mW    xK_n    #! "xcalib -i -a"
     {- On P55, screen will turn off, but not back on

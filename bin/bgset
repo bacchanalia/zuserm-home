@@ -2,12 +2,21 @@
 use strict;
 use warnings;
 use Time::HiRes qw(sleep);
+use Cwd 'abs_path';
 
 sub findFile($$);
 sub getRandomBackground($$@);
-sub setBackground($);
+sub setBackground($;$);
 sub remove($@);
 sub getFiles($);
+sub back();
+sub forward();
+sub shiftHistory($);
+sub resetHistoryPosition();
+sub readHistoryFile($);
+sub writeHistoryFile($@);
+sub setHistoryCurFile($);
+sub setHistoryCurLine($);
 
 my $setExec = "Esetroot";
 my $delay = 300;
@@ -18,6 +27,9 @@ my $okExts = join "|", @exts;
 
 my $backgroundDir = "$ENV{HOME}/.cache/backgrounds";
 my $backgroundSubdir = "fhd";
+my $historyPrevFile = "$backgroundDir/history-prev";
+my $historyNextFile = "$backgroundDir/history-next";
+my $historyCurFile = "$backgroundDir/history-cur";
 
 my $usage = "Usage:
   $0 -h|--help
@@ -37,16 +49,49 @@ my $usage = "Usage:
     -if not set, TARGET defaults to \"BACKGROUND_DIR/BACKGROUND_SUBDIR\"
     -\"$setExec\" is used to set the X root image
 
+    Each time an image is set as the background:
+      the contents of: $historyNextFile
+        are appended to: $historyPrevFile
+        and $historyNextFile is removed
+      the contenxt of: $historyCurFile
+        are appended to: $historyPrevFile
+        and $historyCurFile is removed
+      the date and the filepath is written to:
+        $historyCurFile
+
+  $0 --back|back|--prev|prev
+    Append $historyCurFile to $historyNextFile
+
+    Read and remove the last line of: $historyPrevFile
+
+    Set the file indicated in the removed line
+      and write the line to $historyCurFile
+
+    If there is no such line, do nothing
+
+  $0 --forward|forward|--next|next
+    Append $historyCurFile to $historyPrevFile
+
+    Read and remove the first line of: $historyNextFile
+
+    Set the file indicated in the removed line
+      and write the line to $historyCurFile
+
+    If there is no such line, run `$0 --once`
+
   $0 --bash-complete COMP_LINE COMP_POINT
-     print a list of words for bash completion
-     COMP_LINE  - the full cmdline as a string
-     COMP_POINT - the cursor position in the cmdline
+    print a list of words for bash completion
+    COMP_LINE  - the full cmdline as a string
+    COMP_POINT - the cursor position in the cmdline
 
   OPTS
     -q|--quiet / -v|--verbose          {default is --verbose}
       if --quiet, do not print wallpaper names as they are selected
         and suppress output from $setExec
       otherwise, print each file selected and do not suppress output
+
+    -o|--once
+      set background once and exit
 
     -w|--wait                          {default is to not wait}
       If TARGET does not exist and does not match any files in
@@ -80,7 +125,16 @@ sub main(@){
     die $usage;
   }
 
+  if(@_ == 1 and $_[0] =~ /^(--back|back|--prev|prev)/){
+    back();
+    exit 0;
+  }elsif(@_ == 1 and $_[0] =~ /^(--forward|forward|--next|next)/){
+    forward();
+    exit 0;
+  }
+
   my $verbose = 1;
+  my $once = 0;
   my $wait = 0;
   my $excludePattern = undef;
   while(@_ > 0 and $_[0] =~ /^-/){
@@ -89,6 +143,8 @@ sub main(@){
       $verbose = 0;
     }elsif($arg =~ /^(-v|--verbose)$/){
       $verbose = 1;
+    }elsif($arg =~ /^(-o|--once)$/){
+      $once = 1;
     }elsif($arg =~ /^(-w|--wait)$/){
       $wait = 1;
     }elsif($arg =~ /^--dir=(.*)$/){
@@ -126,6 +182,9 @@ sub main(@){
         if(defined $file and -f $file){
           setBackground $file;
           $curFile = $file;
+        }
+        if($once){
+          exit 0;
         }
         sleep $delay;
       }
@@ -172,9 +231,14 @@ sub getRandomBackground($$@){
   }
 }
 
-sub setBackground($){
-  my $file = shift;
+sub setBackground($;$){
+  my ($file, $resetHistoryPosition) = @_;
+  $resetHistoryPosition = 1 if not defined $resetHistoryPosition;
+  $file = abs_path $file;
   print "$file\n" if $verbose;
+  resetHistoryPosition() unless not $resetHistoryPosition;
+  setHistoryCurFile $file;
+
   $file =~ s/'/'\\''/g;
   my $redirect = $verbose ? '' : ">/dev/null 2>/dev/null";
   system "$setExec '$file' $redirect";
@@ -198,6 +262,89 @@ sub getFiles($){
   return @files;
 }
 
+sub back(){
+  my $item = shiftHistory 'prev';
+  if(defined $item and $item =~ /^([^|]*)\|(.*)$/){
+    setBackground $2, 0;
+  }
+}
+sub forward(){
+  my $item = shiftHistory 'next';
+  if(defined $item and $item =~ /^([^|]*)\|(.*)$/){
+    setBackground $2, 0;
+  }else{
+    exec $0, "--once";
+  }
+}
+sub shiftHistory($){
+  my $direction = shift;
+  my @cur = readHistoryFile $historyCurFile;
+  my @prev = readHistoryFile $historyPrevFile;
+  my @next = readHistoryFile $historyNextFile;
+  my $item;
+  if($direction eq "prev"){
+    if(@prev > 0){
+      $item = pop @prev;
+      @next = (@cur, @next);
+      @cur = ();
+    }
+  }elsif($direction eq "next"){
+    if(@next > 0){
+      $item = shift @next if @next > 0;
+      @prev = (@prev, @cur);
+      @cur = ();
+    }
+  }else{
+    die "invalid direction: $direction\n";
+  }
+  writeHistoryFile $historyCurFile, @cur;
+  writeHistoryFile $historyPrevFile, @prev;
+  writeHistoryFile $historyNextFile, @next;
+  return $item;
+}
+sub resetHistoryPosition(){
+  my @cur = readHistoryFile $historyCurFile;
+  my @prev = readHistoryFile $historyPrevFile;
+  my @next = readHistoryFile $historyNextFile;
+
+  writeHistoryFile $historyCurFile, ();
+  writeHistoryFile $historyPrevFile, (@prev, @cur, @next);
+  writeHistoryFile $historyNextFile, ();
+}
+
+sub readHistoryFile($){
+  my $file = shift;
+  my @lines;
+  if(-f $file){
+    open FH, "< $file" or die "Could not read $file\n";
+    @lines = <FH>;
+    close FH;
+  }
+  return @lines;
+}
+sub writeHistoryFile($@){
+  my ($file, @lines) = @_;
+  if(@lines == 0){
+    system "rm", "-f", $file;
+  }else{
+    open FH, "> $file" or die "Could not write $file\n";
+    print FH @lines;
+    close FH;
+  }
+}
+
+sub setHistoryCurFile($){
+  my $file = shift;
+  my $date = `date`;
+  chomp $date;
+  setHistoryCurLine "$date|$file\n";
+}
+sub setHistoryCurLine($){
+  my $line = shift;
+  chomp $line;
+  $line = "$line\n";
+  writeHistoryFile $historyCurFile, ($line);
+}
 
 sub bashComplete($$){
   my ($cmdLine, $pos) = @_;
@@ -208,7 +355,7 @@ sub bashComplete($$){
 
   my @words = split /\s+/, $cmd;
   shift @words;
-  pop @words if not $isNewWord;
+  my $curWord = pop @words if not $isNewWord;
 
   my @opts = qw(
     -h --help
@@ -218,18 +365,9 @@ sub bashComplete($$){
     --subdir=
     --delay=
     --exclude=
-
-    -h --help
-    --sendreceive
-    --seed
-    --lastsnapshot
-    --snapshot
-    --cleanup=1 --cleanup=30 --cleanup=all
-    --remove
-    --delete
-    --monitor
-    --info
     --bash-complete
+    --forward forward --next next
+    --back back --prev prev
   );
 
   for my $word(@words){
@@ -240,7 +378,9 @@ sub bashComplete($$){
     }
   }
 
-  if(@words > 0 and $words[-1] =~ /^-/){
+  my $optWord = $isNewWord ? $words[-1] : $curWord;
+
+  if(defined $optWord and $optWord =~ /^-/){
     return @opts;
   }else{
     my @files = getFiles "$backgroundDir/$backgroundSubdir";

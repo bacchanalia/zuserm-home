@@ -23,6 +23,7 @@ sub main(@) {
     'bgset' => complete("_bgset", qw(bgset)),
     'xmonad-bindings' => complete("_xmonad_bindings", qw(xmonad-bindings xmb)),
     'cloud' => complete("_cloud", qw(cloud)),
+    'taffybar-run' => complete("_taffybar_run", qw(taffybar-run)),
     'completion-aliases' => completionAliases(
        'evince' => [qw(evi)],
        'git'    => [qw(g)],
@@ -52,7 +53,7 @@ sub complete($@){
 
 sub getFctImpls(){
   my $autoCompleteImpls = {};
-  for my $cmd(qw(alarm backup bgset cloud mnt xmb xmonad-bindings)){
+  for my $cmd(qw(alarm backup bgset cloud mnt taffybar-run xmb xmonad-bindings)){
     my $fct = "_$cmd";
     $fct =~ s/\W+/_/g;
     $$autoCompleteImpls{$fct} = '{

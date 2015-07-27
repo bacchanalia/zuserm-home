@@ -1,0 +1,295 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Date::Parse qw(str2time);
+use Date::Format qw(time2str);
+
+my $dateRange = int(20 * 365 * 24 * 60 * 60);
+
+sub runFilterBranch($@);
+sub readFilterCommitsFile($);
+sub writeFilterCommitsFile($$);
+sub getFilterScript($$);
+sub checkTime($);
+sub getTime($);
+sub absTime($);
+sub formatTime($);
+sub run(@);
+sub maybeRun(@);
+
+my $dateDisplayFormat = "%Y-%m-%d %H:%M:%S";
+my $dateDisplayFormatRegex = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
+
+my $usage = "Usage:
+  $0 [OPTS] TARGET_COMMIT START_DATE END_DATE
+    rebase HEAD onto git commit TARGET_COMMIT
+    make earliest commit START_DATE and latest commit END_DATE,
+      and make each intermediate commit fall between them
+    START_DATE and END_DATE can be:
+      -unix timestamp {seconds since epoch}
+      -relative past time of the form: \"X UNITs ago\"
+       UNIT can be days, hours, minutes, or seconds
+      -\"now\" for right now
+      -\"start\" for the oldest date in the commits
+      -\"end\" for the newest date in the commits
+
+  $0 [OPTS] TARGET_COMMIT --same
+    same as above, except do not modify times.
+    useful with -e
+
+  OPTS
+    -f             use -f in git filter-branch command
+    -e             edit the dates in an editor before filtering on them
+    --timezone=TZ  use TZ for timezone instead of `date +%z`
+";
+
+sub main(@){
+  my $force = 0;
+  my $edit = 0;
+  my $timezone = undef;
+  while (@_ > 0 and $_[0] =~ /^-/){
+    my $arg = shift;
+    if($arg =~ /^(-f)$/){
+      $force = 1;
+    }elsif($arg =~ /^(-e)$/){
+      $edit = 1;
+    }elsif($arg =~ /^--timezone=(.+)$/){
+      $timezone = $1;
+    }else{
+      die $usage;
+    }
+  }
+
+  my ($targetCommit, $startDate, $endDate, $same);
+  if(@_ == 2 and $_[1] =~ /^(--same)$/){
+    ($targetCommit, $startDate, $endDate) = (shift, undef, undef);
+    $same = 1;
+  }elsif(@_ == 3){
+    ($targetCommit, $startDate, $endDate) = @_;
+    $same = 0;
+  }else{
+    die $usage;
+  }
+
+  my $targetCommitHash = `git rev-parse $targetCommit`;
+  chomp $targetCommitHash;
+  die "did not understand $targetCommit\n" if $targetCommitHash !~ /^[0-9a-f]{40}$/;
+
+  my @commits = `git rev-list $targetCommitHash..HEAD`;
+  chomp foreach @commits;
+  if(not $same and $startDate !~ /^(start|end)$/){
+    $startDate = getTime $startDate;
+  }
+  if(not $same and $endDate !~ /^(start|end)$/){
+    $endDate = getTime $endDate;
+  }
+
+  my ($oldest, $newest);
+  for my $c(@commits){
+    my $t = `git show -s --format=%at $c`;
+    chomp $t;
+    die "Invalid commit date: $t\n" if not checkTime $t;
+    $oldest = $t if not defined $oldest or $t < $oldest;
+    $newest = $t if not defined $newest or $t > $newest;
+  }
+  die "no commits\n" if not defined $oldest or not defined $newest;
+
+  if($same){
+    print "using original commit dates\n";
+  }else{
+    $startDate = $oldest if $startDate =~ /^(start)$/;
+    $startDate = $newest if $startDate =~ /^(end)$/;
+    $endDate = $oldest if $endDate =~ /^(start)$/;
+    $endDate = $newest if $endDate =~ /^(end)$/;
+
+    printf "old range: %s => %s\n", formatTime($oldest), formatTime($newest);
+    printf "new range: %s => %s\n", formatTime($startDate), formatTime($endDate);
+    print "\n";
+  }
+
+  my $filterCommits = [];
+  my %originalDates;
+  for my $c(@commits){
+    my $t = `git show -s --format=%at $c`;
+    chomp $t;
+    my $offsetRatio;
+    if($newest == $oldest){
+      $offsetRatio = 0;
+    }else{
+      $offsetRatio = ($t-$oldest) / ($newest-$oldest);
+    }
+    my $newDate;
+    if($same){
+      $newDate = $t;
+    }else{
+      my $offset = $offsetRatio * ($endDate - $startDate);
+      $newDate = $startDate + $offset;
+    }
+    $originalDates{$c} = $t;
+    push @$filterCommits, [$c, $newDate];
+  }
+
+  if($edit){
+    my $tmpFile = "/tmp/rebase-reltime-" . time;
+    writeFilterCommitsFile $tmpFile, $filterCommits;
+    run "editor", $tmpFile;
+    $filterCommits = readFilterCommitsFile $tmpFile;
+    print "\n";
+  }
+
+  print "Changing the following commits:\n";
+  for my $commitDate(@$filterCommits){
+    my ($commit, $newDate) = @$commitDate;
+    my $originalDate = $originalDates{$commit};
+    printf "%s %s => %s\n",
+      substr($commit, 0, 7), formatTime($originalDate), formatTime($newDate);
+  }
+  print "\n";
+
+  print "proceed? [y/N]";
+  my $response = <STDIN>;
+  die "aborted\n" unless $response eq "y\n";
+
+  if(not defined $timezone){
+    $timezone = `date +%z`;
+    chomp $timezone;
+  }
+
+  my $filterScript = getFilterScript $filterCommits, $timezone;
+  my @args = ("--env-filter", $filterScript, "$targetCommitHash..HEAD");
+  my $success = runFilterBranch $force, @args;
+  if(not $force and not $success){
+    print "rerun with -f? [y/N]";
+    $response = <STDIN>;
+    die "aborted\n" unless $response eq "y\n";
+    $success = runFilterBranch 1, @args;
+    if(not $success){
+      die "FAILED\n";
+    }
+  }
+}
+
+sub runFilterBranch($@){
+  my ($force, @args) = @_;
+  my @cmd = ("git", "filter-branch");
+  @cmd = (@cmd, "-f") if $force;
+  @cmd = (@cmd, @args);
+  maybeRun @cmd;
+  return $? == 0;
+}
+
+sub readFilterCommitsFile($){
+  my ($file) = @_;
+  my $filterCommits = [];
+  open FH, "< $file" or die "Could not read $file\n";
+  my @lines = <FH>;
+  close FH;
+  for my $line(@lines){
+    my $parsedLine = $line;
+    chomp $parsedLine;
+    $parsedLine =~ s/#.*//;
+    $parsedLine =~ s/^\s+//;
+    $parsedLine =~ s/\s+$//;
+    next if $parsedLine =~ /^\s*$/;
+    if($parsedLine =~ /^([a-f0-9]{40}|[a-f0-9]{7}) ($dateDisplayFormatRegex)$/){
+      my ($commit, $t) = ($1, $2);
+      $commit = `git rev-parse $commit`;
+      chomp $commit;
+      push @$filterCommits, [$commit, getTime($t)];
+    }else{
+      die "Malformed line: $line";
+    }
+  }
+  return $filterCommits;
+}
+sub writeFilterCommitsFile($$){
+  my ($file, $filterCommits) = @_;
+  open FH, "> $file" or die "Could not write $file\n";
+  print FH ''
+    . "# edit the dates below\n"
+    . "# each commit is one per line\n"
+    . "# format is \"COMMIT_SHA1 $dateDisplayFormat #LOG_SUMMARY\"\n"
+    . "# leading/trailing whitespace on lines is ignored\n"
+    . "# removing a line will cause that commit not to be modified\n"
+    . "# anything following a # on a line is a comment and is ignored\n"
+    . "\n"
+    ;
+  for my $commitDate(@$filterCommits){
+    my ($commit, $t) = @$commitDate;
+    my $info = `git show --format='%s {old: %ci}' -s $commit`;
+    chomp $info;
+    printf FH "%s %s       #$info\n", substr($commit, 0, 7), formatTime($t);
+  }
+  close FH;
+}
+
+sub getFilterScript($$){
+  my ($filterCommits, $timezone) = @_;
+  my $script = '';
+  for my $commitDate(@$filterCommits){
+    my ($commit, $t) = @$commitDate;
+    my $date = "$t $timezone";
+    $script .= ""
+      . "  if [ \$GIT_COMMIT = $commit ]\n"
+      . "  then\n"
+      . "    export GIT_AUTHOR_DATE=\"$date\"\n"
+      . "    export GIT_COMMITTER_DATE=\"$date\"\n"
+      . "  fi\n"
+      ;
+  }
+  return $script;
+}
+
+sub checkTime($){
+  my ($t) = @_;
+  my $now = time;
+  return $t =~ /^\d+$/
+    && ($now - $dateRange) < $t && $t < ($now + $dateRange);
+}
+
+sub getTime($){
+  my ($date) = @_;
+
+  my $t;
+  if(checkTime $date){
+    $t = $date;
+  }elsif($date =~ /^([0-9.]+) seconds ago$/){
+    $t = absTime int($1);
+  }elsif($date =~ /^([0-9.]+) minutes ago$/){
+    $t = absTime int($1*60);
+  }elsif($date =~ /^([0-9.]+) hours ago$/){
+    $t = absTime int($1*60*60);
+  }elsif($date =~ /^([0-9.]+) days ago$/){
+    $t = absTime int($1*24*60*60);
+  }elsif($date =~ /^now$/){
+    $t = absTime 0;
+  }else{
+    $t = str2time $date;
+  }
+
+  die "Invalid date: $date\n" if not checkTime $t;
+  return $t;
+}
+
+sub absTime($){
+  my ($secAgo) = @_;
+  my $t = `date --date="$secAgo seconds ago" +%s`;
+  chomp $t;
+  return $t;
+}
+
+sub formatTime($){
+  my ($t) = @_;
+  return time2str $dateDisplayFormat, $t;
+}
+
+sub run(@){
+  maybeRun @_;
+  die "Error running '@_'\n" if $? != 0;
+}
+sub maybeRun(@){
+  print "@_\n";
+  system @_;
+}
+
+&main(@ARGV);
