@@ -44,6 +44,7 @@ wvdial.conf
 .Xauthority
 
 #media, binaries, data
+.fceux/
 .icedove/
 .kodi/
 .mozilla/
