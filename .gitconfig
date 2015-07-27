@@ -6,7 +6,11 @@
     quotepath = false
 [alias]
     a = add
-    s = status
+    s = ! \
+        git status && \
+        stashes=`git stash list | wc -l` && \
+        [ $stashes -gt 0 ] && echo $stashes stashes && \
+        true
     c = commit
     cp = cherry-pick
     cpcon = cherry-pick --continue
