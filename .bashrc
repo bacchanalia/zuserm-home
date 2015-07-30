@@ -78,6 +78,7 @@ alias :h='man'
 alias :q='exit'
 alias :r='. /etc/profile; . ~/.bashrc;'
 
+function e            { email.pl --print "$@"; }
 function vol          { pulse-vol "$@"; }
 function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
