@@ -84,7 +84,7 @@ function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
-function i            { feh -FZ "$@" ; }
+function i            { feh "$@" ; }
 function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
 function gs           { g s "$@"; }
