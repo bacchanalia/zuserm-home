@@ -21,8 +21,9 @@ if [ "$TERM" == "rxvt" ]; then
 fi
 
 function setps1 {
+  host_alias=`hostname -f | cut -f 1,2 -d '.'`
   if [ `whoami`   != "zuserm"       ]; then local u="\u"  ; fi
-  if [ `hostname` != "zuserm-hp15t" ]; then local h="@\h" ; fi
+  if [ `hostname` != "zuserm-hp15t" ]; then local h="@$host_alias" ; fi
   PS1="\[\033[G\]\t|$u$h:\w"'$(__git_ps1 "|%.2s")'"$ "
 }
 if [ -n "PS1" ]; then setps1 ; fi
