@@ -2,7 +2,9 @@
 [ -n "$PS1" ] && [ -f /etc/bash_completion ] && . /etc/bash_completion
 
 shopt -s histappend
-HISTCONTROL=ignoredups:ignorespace:ignoreboth
+# ignoredups: do not add duplicate history entries
+# ignoredspace: do not add history entries that start with space
+export HISTCONTROL=ignoredups:ignorespace
 HISTSIZE=1000000
 HISTTIMEFORMAT="%F %T "
 
