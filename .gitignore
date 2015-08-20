@@ -97,6 +97,7 @@ fontconfig/
 .config/*
 !.config/backup.conf
 !.config/feh/
+!.config/iguana/
 !.config/ipmagic/
 !.config/livestreamer/
 !.config/mpv/
