@@ -22,6 +22,7 @@ sub main(@) {
     'update-repo' => complete("_repo_lists", qw(update-repo)),
     'bgset' => complete("_bgset", qw(bgset)),
     'xmonad-bindings' => complete("_xmonad_bindings", qw(xmonad-bindings xmb)),
+    'igcmd' => complete("_igcmd", qw(igcmd)),
     'crashplan' => complete("_crashplan", qw(crashplan cloud)),
     'taffybar-run' => complete("_taffybar_run", qw(taffybar-run)),
     'nes' => complete("_nes", qw(nes)),
@@ -54,7 +55,7 @@ sub complete($@){
 
 sub getFctImpls(){
   my $autoCompleteImpls = {};
-  for my $cmd(qw(alarm backup bgset crashplan mnt nes taffybar-run xmb xmonad-bindings)){
+  for my $cmd(qw(alarm backup bgset crashplan mnt nes taffybar-run xmb xmonad-bindings igcmd)){
     my $fct = "_$cmd";
     $fct =~ s/\W+/_/g;
     $$autoCompleteImpls{$fct} = '{
