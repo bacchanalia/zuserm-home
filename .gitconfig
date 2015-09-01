@@ -69,6 +69,8 @@
   diff = true
   status = true
   log = true
+[log]
+  date = rfc
 [push]
   default = simple
 [gui]
