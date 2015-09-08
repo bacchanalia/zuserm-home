@@ -106,6 +106,7 @@ fontconfig/
 !.config/pulse/default.pa
 !.config/taffybar/
 !.config/tpbattstat.conf
+!.config/vmpk.sourceforge.net/
 .cpan/
 .cpanm/
 .FBReader/
