@@ -41,6 +41,7 @@ libaudio-wma-perl
 libav-tools
 libfile-fcntllock-perl
 libdate-manip-perl
+libfile-slurp-perl
 libgdbm-dev
 libimage-exiftool-perl
 libio-socket-ssl-perl
