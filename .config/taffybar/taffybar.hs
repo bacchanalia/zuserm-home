@@ -9,6 +9,7 @@ import System.Taffybar (defaultTaffybar, defaultTaffybarConfig,
   Position(Top, Bottom))
 
 import Data.Functor ((<$>))
+import Data.List
 import System.Environment (getArgs)
 
 main = do
@@ -21,9 +22,10 @@ main = do
       fgColor = hexColor $ RGB (0x93/0xff, 0xa1/0xff, 0xa1/0xff)
       bgColor = hexColor $ RGB (0x00/0xff, 0x2b/0xff, 0x36/0xff)
       textColor = hexColor $ Black
-      sep = W.sepW Black 2
+      addSeperators = concatMap (++ [W.sepW Black 2])
 
-      start = [ W.wmLogNew WMLogConfig
+      start = addSeperators . return $
+              [W.wmLogNew WMLogConfig
                 { titleLength = 30
                 , wsImageHeight = 20
                 , titleRows = True
@@ -31,29 +33,26 @@ main = do
                 , wsBorderColor = RGB (0x58/0xff, 0x6e/0xff, 0x75/0xff)
                 }
               ]
-      end = reverse
-          [ W.monitorCpuW
-          , W.monitorMemW
-          , W.progressBarW
-          , W.fcrondynW
-          , sep
-          , W.netStatsW
-          , sep
-          , W.netW
-          , W.widthScreenWrapW 0.165972 =<< W.klompW
-          , W.volumeW
-          , W.micW
-          , W.pidginPipeW $ barHeight cfg
-          , W.thunderbirdW (barHeight cfg) Green Black
-          -- , W.ekigaW
-          -- , W.cpuIntelPstateW
-          , W.cpuFreqsW
-          -- , W.fanW
-          , W.brightnessW
-          , colW [ W.pingMonitorW "G" "www.google.com" ]
-          , W.tpBattStatW $ barHeight cfg
-          , sep
-          , W.clockW
+      end = addSeperators . map reverse . reverse $
+          [ [W.progressBarW, W.fcrondynW]
+          , [ W.widthScreenWrapW (1/6) =<< W.klompW
+            , W.volumeW
+            , W.micW
+            , colW [ W.paSinkW   (find ("usb" `isInfixOf`))
+                   , W.paSourceW (const Nothing)]]
+          , [ W.netW
+            , W.pingMonitorW "G" "8.8.8.8"
+            , W.netStatsW
+            , W.pidginPipeW $ barHeight cfg
+            , W.thunderbirdW (barHeight cfg) Green Black]
+            -- , [W.ekigaW]
+          , [W.monitorCpuW, W.monitorMemW]
+          , [ W.cpuFreqsW
+            -- , W.fanW
+            -- , [W.cpuIntelPstateW]
+            , W.brightnessW
+            , W.tpBattStatW $ barHeight cfg]
+          , [W.clockW]
           ]
 
   rcParseString $ ""
