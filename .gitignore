@@ -98,8 +98,7 @@ fontconfig/
 !.config/pulse
 .config/pulse/*
 !.config/pulse/default.pa
-!.config/taffybar/taffybar.hs
-!.config/taffybar/lib/
+!.config/taffybar/
 !.config/tpbattstat.conf
 .cpan/
 .cpanm/
