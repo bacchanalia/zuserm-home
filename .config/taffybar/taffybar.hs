@@ -1,19 +1,26 @@
+{-# LANGUAGE OverloadedStrings #-}
 import qualified Widgets as W
 import Color (Color(..), hexColor)
 import WMLog (WMLogConfig(..))
-import Utils (colW)
+import Utils
 
 import Graphics.UI.Gtk.General.RcStyle (rcParseString)
 import System.Taffybar (defaultTaffybar, defaultTaffybarConfig,
   barHeight, barPosition, widgetSpacing, startWidgets, endWidgets,
   Position(Top, Bottom))
 
-import Data.Functor ((<$>))
+import Control.Applicative
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
 import Data.List
+import Data.Maybe
+import qualified DBus        as DBus
+import qualified DBus.Client as DBus
 import System.Environment (getArgs)
 
 main = do
   isBot <- elem "--bottom" <$> getArgs
+  dbc <- dbusConnect
   let cfg = defaultTaffybarConfig { barHeight=36
                                   , widgetSpacing=5
                                   , barPosition=if isBot then Bottom else Top
@@ -38,8 +45,8 @@ main = do
           , [ W.widthScreenWrapW (1/6) =<< W.klompW
             , W.volumeW
             , W.micW
-            , colW [ W.paSinkW   (find ("usb" `isInfixOf`))
-                   , W.paSourceW (const Nothing)]]
+            , colW [ W.paSinkW   dbc (find ("usb" `isInfixOf`))
+                   , W.paSourceW dbc (const Nothing)]]
           , [ W.netW
             , W.pingMonitorW "G" "8.8.8.8"
             , W.netStatsW
@@ -62,4 +69,18 @@ main = do
         ++ "  fg[NORMAL] = \"" ++ fgColor ++ "\""
         ++ "  text[NORMAL] = \"" ++ textColor ++ "\""
         ++ "}"
+
   defaultTaffybar cfg {startWidgets=start, endWidgets=end}
+
+dbusConnect :: IO (Maybe DBus.Client)
+dbusConnect = runMaybeT $ do
+  address <- MaybeT DBus.getSessionAddress
+         <|> MaybeT sessionAddressFromFile
+  client <- lift $ DBus.connect address
+  lift $ DBus.requestName client "user.taffybar" [DBus.nameAllowReplacement, DBus.nameReplaceExisting]
+  return client
+  where
+    sessionAddressFromFile = (>>= DBus.parseAddress)
+     . listToMaybe . catMaybes
+     . map (stripPrefix "DBUS_SESSION_BUS_ADDRESS=")
+     <$> systemReadLines "cat ~/.dbus/session-bus/*"
