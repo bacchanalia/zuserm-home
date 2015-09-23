@@ -104,6 +104,7 @@ fontconfig/
 .cpan/
 .cpanm/
 .FBReader/
+.fltk/
 fontconfig/
 .fontconfig/
 .fonts/
