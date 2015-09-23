@@ -40,8 +40,8 @@ main = do
           , [ W.widthScreenWrapW (1/6) =<< W.klompW
             , W.volumeW
             , W.micW
-            , colW [ W.paSinkW   dbc (find ("usb" `isInfixOf`))
-                   , W.paSourceW dbc (const Nothing)]]
+            , colW [ W.paSinkW   dbc sinks (Just "U")
+                   , W.paSourceW dbc sources Nothing]]
           , [ W.netW
             , W.pingMonitorW "G" "8.8.8.8"
             , W.netStatsW
@@ -67,3 +67,12 @@ main = do
 
   defaultTaffybar cfg {startWidgets=start, endWidgets=end}
 
+sinks =
+  [ ("B", "alsa_output.pci-0000_00_1b.0.analog-stereo")
+  , ("U", "alsa_output.usb-Generic_Turtle_Beach_USB_Audio_0000000001-00.analog-stereo")
+  , ("H", "alsa_output.pci-0000_00_03.0.hdmi-stereo")
+  ]
+sources =
+  [ ("B", "alsa_input.pci-0000_00_1b.0.analog-stereo")
+  , ("U", "alsa_input.usb-Generic_Turtle_Beach_USB_Audio_0000000001-00.analog-stereo")
+  ]
