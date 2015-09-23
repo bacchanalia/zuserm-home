@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import qualified Widgets as W
 import Color (Color(..), hexColor)
+import DBusUtils
 import WMLog (WMLogConfig(..))
 import Utils
 
@@ -10,12 +11,6 @@ import System.Taffybar (defaultTaffybar, defaultTaffybarConfig,
   Position(Top, Bottom))
 
 import Control.Applicative
-import Control.Monad.Trans
-import Control.Monad.Trans.Maybe
-import Data.List
-import Data.Maybe
-import qualified DBus        as DBus
-import qualified DBus.Client as DBus
 import System.Environment (getArgs)
 
 main = do
@@ -72,15 +67,3 @@ main = do
 
   defaultTaffybar cfg {startWidgets=start, endWidgets=end}
 
-dbusConnect :: IO (Maybe DBus.Client)
-dbusConnect = runMaybeT $ do
-  address <- MaybeT DBus.getSessionAddress
-         <|> MaybeT sessionAddressFromFile
-  client <- lift $ DBus.connect address
-  lift $ DBus.requestName client "user.taffybar" [DBus.nameAllowReplacement, DBus.nameReplaceExisting]
-  return client
-  where
-    sessionAddressFromFile = (>>= DBus.parseAddress)
-     . listToMaybe . catMaybes
-     . map (stripPrefix "DBUS_SESSION_BUS_ADDRESS=")
-     <$> systemReadLines "cat ~/.dbus/session-bus/*"
