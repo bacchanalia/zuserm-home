@@ -26,8 +26,17 @@ syntax on
 colorscheme solarized
 set background=dark
 
+"""detect filetypes"""
 au BufRead,BufNewFile *.hx set filetype=haxe
 au Syntax haxe source ~/.vim/haxe/haxe.vim
+
+au BufRead * call s:isHaskellScript()
+function s:isHaskellScript()
+  if match(getline(1), '\v#!.*run(ghc|haskell)') >= 0
+    set filetype=haskell
+  endif
+endfunction
+""""""
 
 hi TrailingWhitespace ctermbg=red guibg=red
 autocmd CursorMoved  * match TrailingWhitespace /\%(\s\+\&\s*\%#\@!\)$/
