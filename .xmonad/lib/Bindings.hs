@@ -87,6 +87,9 @@ shortcuts conf = "Shortcuts" @@ do
         "Conservative"  @@ mC    xK_F2   #! "sudo cpu-set conservative"
         "Powersave"     @@ mC    xK_F3   #! "sudo cpu-set powersave"
         "Performance"   @@ mC    xK_F4   #! "sudo cpu-set performance"
+    "feh"           @@ do
+        "left"          @@ mA    xK_F11  #! "xdotool search --class feh key Left"
+        "right"         @@ mA    xK_F12  #! "xdotool search --class feh key Right"
     "Rotate Deasil/Widdershins" @@ do
                            mCW   xK_Right#! "rotate deasil"
                            mCW   xK_Left #! "rotate widdershins"
