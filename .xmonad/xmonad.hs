@@ -9,6 +9,7 @@ import XMonad.Layout.LayoutCombinators ( (|||), JumpToLayout(..))
 import XMonad.Hooks.EwmhDesktops (ewmh)
 import XMonad.Hooks.ManageDocks (avoidStruts, SetStruts(..), manageDocks)
 import XMonad.Hooks.ManageHelpers (doFullFloat, isFullscreen)
+import XMonad.Layout.Grid (Grid(..))
 import XMonad.Layout.Named (named)
 import XMonad.Layout.NoBorders (smartBorders)
 import XMonad.Util.Types (Direction2D(U,D,L,R))
@@ -84,6 +85,7 @@ myLayoutHook = avoidStruts . smartBorders
              $   named "left" (Tall 1 incr ratio)
              ||| named "top"  (Mirror $ Tall 1 incr ratio)
              ||| named "full" Full
+             ||| named "grid" Grid
   where incr = 5/100 ; ratio = 50/100
 
 myManageHook = execWriter $ do
