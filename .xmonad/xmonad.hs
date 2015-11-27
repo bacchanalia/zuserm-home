@@ -95,6 +95,7 @@ myManageHook = execWriter $ do
     title =? "npviewer.bin"           ~~> doFloat
     title =? "plugin-container"       ~~> doFloat
     title =? "Assault Android Cactus" ~~> doFloat
+    title =? "xmonad-float-unfocus"   ~~> (doFloat <+> doF Stk.focusDown)
 
 restartFF = do
     w <- ask
