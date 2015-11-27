@@ -91,9 +91,9 @@ function i            { feh "$@" ; }
 function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
 function gs           { g s "$@"; }
-function grep         { command grep --color=auto "$@"; }
+function grep         { command grep -s --color=auto "$@"; }
 function hat          { highlight --out-format=ansi --force "$@"; }
-function codegrep     { grep -RIhA "$@"; }
+function codegrep     { grep -sRIhA "$@"; }
 function tags         { tags id3v2 -l "$@"; }
 function enc          { gpg -r "$USER" -o "$@.gpg" -e "$@"; rm "$@"; }
 function dec          { gpg -o `basename "$@" .gpg` -d "$@"; }
