@@ -88,6 +88,7 @@ function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
 function i            { feh "$@" ; }
+function dfa          { df --output=avail "$@" | grep -v '^\s*Avail$'; }
 function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
 function gs           { g s "$@"; }
