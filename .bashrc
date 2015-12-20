@@ -67,7 +67,7 @@ export TEXINPUTS=".:"
 
 #make a wild guess at the DISPLAY you might want
 if [[ -z "$DISPLAY" ]]; then
-  export DISPLAY=`ps -ef | grep '\(/usr/bin/X\|/usr/lib/xorg/Xorg\)' | grep ' :[0-9] ' -o | grep :[0-9] -o`
+  export DISPLAY=`display-guess`
 fi
 
 for cmd in wconnect wauto tether resolv \
