@@ -111,6 +111,7 @@ fontconfig/
 .gem/
 .gnome
 .gnucash
+.hex-a-hop
 .icedtea/
 .lesshst
 .java/
