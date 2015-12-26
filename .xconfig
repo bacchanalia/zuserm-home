@@ -1,5 +1,5 @@
 sudo mnt --other -m Charybdis
-mkdir /tmp/downloads 2>&0
+mkdir -p /tmp/downloads 2>&0
 
 bgset GardenofEarthlyDelights
 xsetroot -cursor_name left_ptr
@@ -15,17 +15,30 @@ xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Scrolling Distance" 50 4
 xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Move Speed" 1 1.75 0.035842 40
 xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Edge Scrolling" 0 0 0
 
-# SynPS/2 Synaptics TouchPad: x-axis range 1472 - 5658 (res 41)
-# SynPS/2 Synaptics TouchPad: y-axis range 1408 - 4692 (res 54)
-xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Soft Button Areas" 3983 0 0 0 3146 3983 0 0
-xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Area" 0 0 0 4457
+# # http://www.thinkwiki.org/wiki/How_to_configure_the_TrackPoint
+# xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation" 1
+# xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation Button" 2
+# xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation Axes" 6 7 4 5
+# xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation Timeout" 200
 
+# Set the portion of the clickpad used for each botton.
+XMIN=`xinput --list "SynPS/2 Synaptics TouchPad" \
+    | egrep -A1 'Rel X' | egrep -o ': [0-9]+' | egrep -o '[0-9]+'`
+XMAX=`xinput --list "SynPS/2 Synaptics TouchPad" \
+    | egrep -A1 'Rel X' | egrep -o '\- [0-9]+' | egrep -o '[0-9]+'`
+MCLICKSTART=$(( ($XMAX - $XMIN) * 4 / 10 + $XMIN ))
+RCLICKSTART=$(( ($XMAX - $XMIN) * 6 / 10 + $XMIN ))
+xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Soft Button Areas" \
+  $RCLICKSTART 0 0 0 $MCLICKSTART $RCLICKSTART 0 0
 
-#http://www.thinkwiki.org/wiki/How_to_configure_the_TrackPoint
-xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation" 1
-xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation Button" 2
-xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation Axes" 6 7 4 5
-xinput set-prop "TPPS/2 IBM TrackPoint" "Evdev Wheel Emulation Timeout" 200
+# Disable moving the cursor at the bottom of the touchpad.
+YMIN=`xinput --list "SynPS/2 Synaptics TouchPad" \
+    | egrep -A1 'Rel Y' | egrep -o ': [0-9]+' | egrep -o '[0-9]+'`
+YMAX=`xinput --list "SynPS/2 Synaptics TouchPad" \
+    | egrep -A1 'Rel Y' | egrep -o '\- [0-9]+' | egrep -o '[0-9]+'`
+YTOUCHEND=$(( ($YMAX - $YMIN) * 13 / 14 + $YMIN ))
+xinput set-prop "SynPS/2 Synaptics TouchPad" "Synaptics Area" \
+  0 0 0 $YTOUCHEND
 
 xset s off
 xset s noblank
