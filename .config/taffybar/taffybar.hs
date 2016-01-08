@@ -48,7 +48,7 @@ main = do
             , W.pidginPipeW $ barHeight cfg
             , W.thunderbirdW (barHeight cfg) Green Black]
             -- , [W.ekigaW]
-          , [W.monitorCpuW, W.monitorMemW]
+          , [W.monitorCpuW 50, W.monitorMemW 50]
           , [ W.cpuFreqsW
             -- , W.fanW
             -- , [W.cpuIntelPstateW]
