@@ -12,3 +12,6 @@ vo=gl
 
 alang=jp
 slang=en
+
+# fix keyboard input on hp15t
+nojoystick=yes
