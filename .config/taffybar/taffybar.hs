@@ -36,6 +36,7 @@ main = do
       bgColor = hexColor $ RGB (0x00/0xff, 0x2b/0xff, 0x36/0xff)
       textColor = hexColor $ Black
       addSeperators = concatMap (++ [W.sepW Black 2])
+      klompChars = 34
 
       start = addSeperators . return $
               [W.wmLogNew WMLogConfig
@@ -48,7 +49,7 @@ main = do
               ]
       end = addSeperators . map reverse . reverse $
           [ [W.progressBarW, W.fcrondynW]
-          , [ W.widthScreenWrapW (1/6) =<< W.klompW
+          , [ W.widthScreenWrapW (1/6) =<< W.klompW klompChars
             , W.volumeW
             , W.micW
             , colW [ W.paSinkW   dbc sinks (Just "U")
