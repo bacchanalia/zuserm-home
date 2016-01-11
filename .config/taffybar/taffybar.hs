@@ -52,7 +52,7 @@ main = do
               ]
       end = addSeperators . map reverse . reverse $
           [ [W.progressBarW, W.fcrondynW]
-          , [ W.widthScreenWrapW (1/6) =<< W.klompW klompChars
+          , [ (W.widthCharWrapW dpi (fontSizePt profile) klompChars) =<< W.klompW klompChars
             , W.volumeW
             , W.micW
             , colW [ W.paSinkW   dbc sinks (Just "U")
