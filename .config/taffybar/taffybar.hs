@@ -13,14 +13,25 @@ import System.Taffybar (defaultTaffybar, defaultTaffybarConfig,
 import Control.Applicative
 import System.Environment (getArgs)
 
+profile = profileFHD
+
+profileFHD = P { height = 36
+               , spacing = 5
+               , titleLen = 30
+               , typeface = "Inconsolata medium"
+               , fontSizePt = 12.0
+               , graphWidth = 50
+               , workspaceImageHeight = 20
+               }
+
 main = do
   isBot <- elem "--bottom" <$> getArgs
   dbc <- dbusConnect
-  let cfg = defaultTaffybarConfig { barHeight=36
-                                  , widgetSpacing=5
+  let cfg = defaultTaffybarConfig { barHeight=height profile
+                                  , widgetSpacing= spacing profile
                                   , barPosition=if isBot then Bottom else Top
                                   }
-      font = "Inconsolata medium 12"
+      font = (typeface profile) ++ " " ++ show (fontSizePt profile)
       fgColor = hexColor $ RGB (0x93/0xff, 0xa1/0xff, 0xa1/0xff)
       bgColor = hexColor $ RGB (0x00/0xff, 0x2b/0xff, 0x36/0xff)
       textColor = hexColor $ Black
@@ -28,8 +39,8 @@ main = do
 
       start = addSeperators . return $
               [W.wmLogNew WMLogConfig
-                { titleLength = 30
-                , wsImageHeight = 20
+                { titleLength = titleLen profile
+                , wsImageHeight = workspaceImageHeight profile
                 , titleRows = True
                 , stackWsTitle = False
                 , wsBorderColor = RGB (0x58/0xff, 0x6e/0xff, 0x75/0xff)
@@ -48,7 +59,7 @@ main = do
             , W.pidginPipeW $ barHeight cfg
             , W.thunderbirdW (barHeight cfg) Green Black]
             -- , [W.ekigaW]
-          , [W.monitorCpuW 50, W.monitorMemW 50]
+          , [W.monitorCpuW $ graphWidth profile, W.monitorMemW $ graphWidth profile],
           , [ W.cpuFreqsW
             -- , W.fanW
             -- , [W.cpuIntelPstateW]
@@ -76,3 +87,12 @@ sources =
   [ ("B", "alsa_input.pci-0000_00_1b.0.analog-stereo")
   , ("U", "alsa_input.usb-Generic_Turtle_Beach_USB_Audio_0000000001-00.analog-stereo")
   ]
+
+data Profile = P { height :: Int
+                 , spacing :: Int
+                 , titleLen :: Int
+                 , typeface :: String
+                 , fontSizePt :: Double
+                 , graphWidth :: Int
+                 , workspaceImageHeight :: Int
+                 }
