@@ -99,6 +99,10 @@ function podcastle    { ~/.src-cache/escapepod/escape-pod-tool --podcastle "$@";
 function pseudopod    { ~/.src-cache/escapepod/escape-pod-tool --pseudopod "$@"; }
 function j            { fcron-job-toggle "$@"; }
 function mp           { mplayer "$@"; }
+function mpu          {
+  if [ -z $2 ] ; then local default_quality='best' ; fi
+  livestreamer "$@" $default_quality
+}
 
 function spawn        { "$@" & disown; }
 function spawnex      { "$@" & disown && exit 0; }
