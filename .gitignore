@@ -97,6 +97,8 @@ fontconfig/
 !.config/backup.conf
 !.config/feh/
 !.config/ipmagic/
+!.config/livestreamer/
+!.config/mpv/
 !.config/pulse
 .config/pulse/*
 !.config/pulse/default.pa
