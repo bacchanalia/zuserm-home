@@ -17,11 +17,8 @@ import qualified XMonad.StackSet as Stk
 
 import System.Taffybar.Hooks.PagerHints (pagerHints)
 
-import Control.Applicative ((<$>))
 import Control.Concurrent (threadDelay)
-import Control.Monad (when)
 import Data.List (isInfixOf)
-import Data.Monoid (All (All))
 import System.FilePath ((</>))
 import System.Directory (getHomeDirectory)
 
@@ -31,7 +28,7 @@ staticAssert (null mouseOverlaps && null keyOverlaps) . execWriter $ do
     pretty mouseOverlaps
     pretty keyOverlaps
 
-main = xmonad . ewmh . pagerHints . addStartUps $ defaultConfig
+main = xmonad . ewmh . pagerHints . addStartUps $ def
     { focusFollowsMouse  = False
     , normalBorderColor  = "#93a1a1"
     , focusedBorderColor = "#dc322f"

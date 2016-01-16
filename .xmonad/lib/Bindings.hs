@@ -9,7 +9,6 @@ import XMonad.Layout.LayoutCombinators (JumpToLayout(..))
 import XMonad.StackSet hiding (focus, workspaces, filter)
 import qualified XMonad.StackSet as SS
 
-import Control.Applicative
 import qualified Data.Foldable as F
 import Data.Map ((!))
 import qualified Data.Map as M
@@ -20,8 +19,8 @@ import Bindings.Keys
 import Bindings.Writer
 
 workspaceNames = map show [1..9]
-testConfig = defaultConfig{ layoutHook = Layout $ layoutHook defaultConfig
-                          , workspaces = workspaceNames }
+testConfig = def{ layoutHook = Layout $ layoutHook def
+                , workspaces = workspaceNames }
 
 tryWriteKeyBindingsCache file = writeKeyBindingsCache file `catchIOError` print
 writeKeyBindingsCache = flip writeFile $ prettyBindingsFlatHex $ keyBinds testConfig
