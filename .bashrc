@@ -79,7 +79,7 @@ function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
-function f            { feh -ZF "$@"; }
+function i            { feh -FZ "$@" ; }
 function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
 function gs           { g s; }
