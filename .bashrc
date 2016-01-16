@@ -22,6 +22,8 @@ if [ "$TERM" == "rxvt" ]; then
   PROMPT_COMMAND='if [ "$WINDOW_TITLE" ]; then '$p1'; else '$p2'; fi'
 fi
 
+rm -f .viminf*.tmp .recently-used #clean home
+
 function setps1 {
   host_alias=`hostname -f | cut -f 1,2 -d '.'`
   if [ `whoami`   != "zuserm"       ]; then local u="\u"  ; fi
@@ -188,7 +190,3 @@ function git() {
 
 # allow <C-S> in vim
 stty stop undef
-
-function clean-home {
-  rm -f .viminf*.tmp .recently-used
-} ; clean-home
