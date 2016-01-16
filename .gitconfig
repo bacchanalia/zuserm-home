@@ -1,46 +1,46 @@
 [user]
-    name = Mike Zuser
-    email = mikezuser@gmail.com
+  name = Mike Zuser
+  email = mikezuser@gmail.com
 [core]
-    pager = less
-    quotepath = false
+  pager = less
+  quotepath = false
 [alias]
-    a = add
-    s = ! \
-        cd ${GIT_PREFIX:-.} && \
-        git status $@ && \
-        stashes=`git stash list | wc -l` && \
-        [ $stashes -gt 0 ] && echo $stashes stashes && \
-        true
-    r = rebase --autostash
-    c = commit
-    cp = cherry-pick
-    cpcon = cherry-pick --continue
-    d = diff
-    ds = diff --staged
-    r = reset HEAD
-    co = checkout
-    b = branch
-    m = merge --no-commit
-    l = log --color --decorate --topo-order
-    lf = log --color --decorate --topo-order --follow
-    ln = log --color --decorate --topo-order --name-status -M
-    lt = log --color --decorate --topo-order --name-status -M \
-             --notes=review --notes=bug --notes=dd
-    dn = pull --no-commit
-    up = push
-    stat = show --stat
-    vimdiff = difftool -y -t vimdiff
-    meld = difftool -t meld
-    graph = log --graph --oneline --color --decorate
-    showm = show -M --summary
-    ignored = ls-files --others
-    pullr = !git stash && git pull -r && git stash pop
+  a = add
+  s = ! \
+    cd ${GIT_PREFIX:-.} && \
+    git status $@ && \
+    stashes=`git stash list | wc -l` && \
+    [ $stashes -gt 0 ] && echo $stashes stashes && \
+    true
+  r = rebase --autostash
+  c = commit
+  cp = cherry-pick
+  cpcon = cherry-pick --continue
+  d = diff
+  ds = diff --staged
+  r = reset HEAD
+  co = checkout
+  b = branch
+  m = merge --no-commit
+  l = log --color --decorate --topo-order
+  lf = log --color --decorate --topo-order --follow
+  ln = log --color --decorate --topo-order --name-status -M
+  lt = log --color --decorate --topo-order --name-status -M \
+         --notes=review --notes=bug --notes=dd
+  dn = pull --no-commit
+  up = push
+  stat = show --stat
+  vimdiff = difftool -y -t vimdiff
+  meld = difftool -t meld
+  graph = log --graph --oneline --color --decorate
+  showm = show -M --summary
+  ignored = ls-files --others
+  pullr = !git stash && git pull -r && git stash pop
 [color]
-    diff = true
-    status = true
-    log = true
+  diff = true
+  status = true
+  log = true
 [push]
-    default = simple
+  default = simple
 [gui]
-    gcwarning = false
+  gcwarning = false
