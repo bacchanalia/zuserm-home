@@ -206,3 +206,10 @@ function ToggleRelativeNumber()
         set relativenumber
     endif
 endfunction
+
+command -nargs=* BandCampToMusicBrainz call BandCampToMusicBrainz(<f-args>)
+function BandCampToMusicBrainz()
+  %s/\v^\s+\n//
+  %s/\v(\d+)\.\n/\1 /
+  %s/\v\s+$//
+endfunction
