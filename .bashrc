@@ -86,7 +86,6 @@ function gs           { g s; }
 function grep         { command grep --color=auto "$@"; }
 function hat          { highlight --out-format=ansi --force "$@"; }
 function codegrep     { grep -RIhA "$@"; }
-function rmplayer     { rm "$@"; }
 function tags         { tags id3v2 -l "$@"; }
 function enc          { gpg -r "$USER" -o "$@.gpg" -e "$@"; rm "$@"; }
 function dec          { gpg -o `basename "$@" .gpg` -d "$@"; }
@@ -98,7 +97,7 @@ function escape-pod   { ~/.src-cache/escapepod/escape-pod-tool --escapepod "$@";
 function podcastle    { ~/.src-cache/escapepod/escape-pod-tool --podcastle "$@"; }
 function pseudopod    { ~/.src-cache/escapepod/escape-pod-tool --pseudopod "$@"; }
 function j            { fcron-job-toggle "$@"; }
-function mp           { mplayer "$@"; }
+function mp           { mpv "$@"; }
 function mpu          {
   if [ -z $2 ] ; then local default_quality='best' ; fi
   livestreamer "$@" $default_quality
