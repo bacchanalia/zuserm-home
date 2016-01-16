@@ -75,7 +75,7 @@ regexGroups re str = fmap (drop 1) $ listToMaybe $ str =~ re
 regexFirstGroup :: String -> String -> Maybe String
 regexFirstGroup re str = listToMaybe $ fromMaybe [] $ regexGroups re str
 regexAllMatches :: String -> String -> [String]
-regexAllMatches re str = concatMap (take 1) $ str =~ re
+regexAllMatches re str = concatMap (take 1) (str =~ re :: [[String]])
 
 readInt :: String -> Maybe Integer
 readInt s = case reads s of
