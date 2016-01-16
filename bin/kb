@@ -1,0 +1,24 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $tmpFile = "/tmp/xmonad-keybindings-prettyprint";
+my $dir = "$ENV{HOME}/.xmonad/lib";
+
+sub main(@){
+  chdir $dir;
+
+  system "rm", $tmpFile;
+  system ""
+    . "runghc -main-is Bindings Bindings.hs"
+    . " | grep -v '^Key Bindings\$'"
+    . " | sed 's/^    //'"
+    . " | cols"
+    . " > $tmpFile"
+    ;
+
+  system "cat $tmpFile";
+  system "bigtext", $tmpFile;
+}
+
+&main(@ARGV);
