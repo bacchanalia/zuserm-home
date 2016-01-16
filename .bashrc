@@ -20,9 +20,13 @@ if [ "$TERM" == "rxvt" ]; then
   PROMPT_COMMAND='if [ "$WINDOW_TITLE" ]; then '$p1'; else '$p2'; fi'
 fi
 
-if [ -n "PS1" ]; then
-  PS1="\[\033[G\]\t|\u@\h:\w"'$(__git_ps1 "|%.2s")'"$ "
-fi
+function setps1 {
+  if [ `whoami`   != "zuserm"       ]; then local u="\u"  ; fi
+  if [ `hostname` != "zuserm-hp15t" ]; then local h="@\h" ; fi
+  PS1="\[\033[G\]\t|$u$h:\w"'$(__git_ps1 "|%.2s")'"$ "
+}
+if [ -n "PS1" ]; then setps1 ; fi
+
 
 pathAppend ()  { for x in $@; do pathRemove $x; export PATH="$PATH:$x"; done }
 pathPrepend () { for x in $@; do pathRemove $x; export PATH="$x:$PATH"; done }
