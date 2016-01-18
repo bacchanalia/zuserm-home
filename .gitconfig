@@ -18,6 +18,9 @@
   cpcon = cherry-pick --continue
   d = diff
   ds = diff --staged
+  vimdiff = difftool -y -t vimdiff
+  vd = difftool -y -t vimdiff
+  vds = difftool -y -t vimdiff --staged
   r = reset HEAD
   co = checkout
   b = branch
@@ -30,7 +33,6 @@
   dn = pull --no-commit
   up = push
   stat = show --stat
-  vimdiff = difftool -y -t vimdiff
   meld = difftool -t meld
   graph = log --graph --oneline --color --decorate
   showm = show -M --summary
