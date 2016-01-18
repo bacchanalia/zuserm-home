@@ -104,6 +104,7 @@ imap <F5> <ESC>:1wincmd<space>w<CR>:w<CR>:Run<CR>li
 
 """Clipboard"""
 map <C-y> "+y
+map <C-y><C-w> "+yW
 map <C-p> "+p
 map <F9>  "*p
 
