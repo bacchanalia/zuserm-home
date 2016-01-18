@@ -55,8 +55,8 @@ main = do
           , [ (W.widthCharWrapW dpi (fontSizePt profile) klompChars) =<< W.klompW klompChars
             , W.volumeW
             , W.micW
-            , colW [ W.paSinkW   dbc sinks (Just "U")
-                   , W.paSourceW dbc sources Nothing]]
+            , colW [ W.paSinkW   dbc sinks   (Just "B")
+                   , W.paSourceW dbc sources (Just "B")]]
           , [ W.netW
             , W.pingMonitorW "G" "8.8.8.8"
             , W.netStatsW
@@ -83,12 +83,11 @@ main = do
   defaultTaffybar cfg {startWidgets=start, endWidgets=end}
 
 sinks =
-  [ ("B", "alsa_output.pci-0000_00_1b.0.analog-stereo")
+  [ ("B", "alsa_output.pci-0000_00_1f.3.analog-stereo")
   , ("U", "alsa_output.usb-Generic_Turtle_Beach_USB_Audio_0000000001-00.analog-stereo")
-  , ("H", "alsa_output.pci-0000_00_03.0.hdmi-stereo")
   ]
 sources =
-  [ ("B", "alsa_input.pci-0000_00_1b.0.analog-stereo")
+  [ ("B", "alsa_input.pci-0000_00_1f.3.analog-stereo")
   , ("U", "alsa_input.usb-Generic_Turtle_Beach_USB_Audio_0000000001-00.analog-stereo")
   ]
 
