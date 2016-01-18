@@ -2,6 +2,10 @@
 [ -n "$PS1" ] && [ -f /etc/bash_completion ] && . /etc/bash_completion
 
 shopt -s histappend
+
+# allow <C-S> in vim
+stty stop undef
+
 # ignoredups: do not add duplicate history entries
 # ignoredspace: do not add history entries that start with space
 export HISTCONTROL=ignoredups:ignorespace
@@ -187,6 +191,3 @@ function git() {
     $realgit "$@"
   fi
 }
-
-# allow <C-S> in vim
-stty stop undef
