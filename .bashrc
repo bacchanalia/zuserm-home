@@ -2,6 +2,10 @@
 [ -n "$PS1" ] && [ -f /etc/bash_completion ] && . /etc/bash_completion
 
 shopt -s histappend
+
+# allow <C-S> in vim
+stty stop undef
+
 # ignoredups: do not add duplicate history entries
 # ignoredspace: do not add history entries that start with space
 export HISTCONTROL=ignoredups:ignorespace
@@ -21,6 +25,8 @@ if [ "$TERM" == "rxvt" ]; then
   p2='echo -ne "\033]0;Terminal: ${PWD/$HOME/~}\007"'
   PROMPT_COMMAND='if [ "$WINDOW_TITLE" ]; then '$p1'; else '$p2'; fi'
 fi
+
+rm -f .viminf*.tmp .recently-used #clean home
 
 function setps1 {
   host_alias=`hostname -f | cut -f 1,2 -d '.'`
@@ -185,10 +191,3 @@ function git() {
     $realgit "$@"
   fi
 }
-
-# allow <C-S> in vim
-stty stop undef
-
-function clean-home {
-  rm -f .viminf*.tmp .recently-used
-} ; clean-home

@@ -63,7 +63,7 @@ main = do
             , W.pidginPipeW $ barHeight cfg
             , W.thunderbirdW (barHeight cfg) Green Black]
             -- , [W.ekigaW]
-          , [W.monitorCpuW $ graphWidth profile, W.monitorMemW $ graphWidth profile],
+          , [W.monitorCpuW $ graphWidth profile, W.monitorMemW $ graphWidth profile]
           , [ W.cpuFreqsW
             -- , W.fanW
             -- , [W.cpuIntelPstateW]
