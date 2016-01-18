@@ -108,7 +108,6 @@ map <C-p> "+p
 map <F9>  "*p
 
 nmap <F7>      "+y
-imap <F7> <ESC>"+yi
 vmap <F7>      "+y
 
 nmap <F8>      "+p
