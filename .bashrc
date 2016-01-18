@@ -2,7 +2,9 @@
 [ -n "$PS1" ] && [ -f /etc/bash_completion ] && . /etc/bash_completion
 
 shopt -s histappend
-HISTCONTROL=ignoredups:ignorespace:ignoreboth
+# ignoredups: do not add duplicate history entries
+# ignoredspace: do not add history entries that start with space
+export HISTCONTROL=ignoredups:ignorespace
 HISTSIZE=1000000
 HISTTIMEFORMAT="%F %T "
 
@@ -21,8 +23,9 @@ if [ "$TERM" == "rxvt" ]; then
 fi
 
 function setps1 {
+  host_alias=`hostname -f | cut -f 1,2 -d '.'`
   if [ `whoami`   != "zuserm"       ]; then local u="\u"  ; fi
-  if [ `hostname` != "zuserm-hp15t" ]; then local h="@\h" ; fi
+  if [ `hostname` != "zuserm-hp15t" ]; then local h="@$host_alias" ; fi
   PS1="\[\033[G\]\t|$u$h:\w"'$(__git_ps1 "|%.2s")'"$ "
 }
 if [ -n "PS1" ]; then setps1 ; fi
@@ -64,7 +67,7 @@ export TEXINPUTS=".:"
 
 #make a wild guess at the DISPLAY you might want
 if [[ -z "$DISPLAY" ]]; then
-  export DISPLAY=`ps -ef | grep /usr/bin/X | grep ' :[0-9] ' -o | grep :[0-9] -o`
+  export DISPLAY=`display-guess`
 fi
 
 for cmd in wconnect wauto tether resolv \
@@ -78,18 +81,20 @@ alias :h='man'
 alias :q='exit'
 alias :r='. /etc/profile; . ~/.bashrc;'
 
+function e            { email.pl --print "$@"; }
 function vol          { pulse-vol "$@"; }
 function ls           { command ls --color=auto "$@"; }
 function l            { ls -alh "$@"; }
 function ll           { l "$@"; }
 function ld           { l -d "$@"; }
-function i            { feh -FZ "$@" ; }
+function i            { feh "$@" ; }
+function dfa          { df --output=avail "$@" | grep -v '^\s*Avail$'; }
 function xmb          { xmonad-bindings "$@"; }
 function g            { git "$@"; }
-function gs           { g s; }
-function grep         { command grep --color=auto "$@"; }
+function gs           { g s "$@"; }
+function grep         { command grep -s --color=auto "$@"; }
 function hat          { highlight --out-format=ansi --force "$@"; }
-function codegrep     { grep -RIhA "$@"; }
+function codegrep     { grep -sRIhA "$@"; }
 function tags         { tags id3v2 -l "$@"; }
 function enc          { gpg -r "$USER" -o "$@.gpg" -e "$@"; rm "$@"; }
 function dec          { gpg -o `basename "$@" .gpg` -d "$@"; }

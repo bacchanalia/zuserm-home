@@ -44,6 +44,7 @@ wvdial.conf
 .Xauthority
 
 #media, binaries, data
+.fceux/
 .icedove/
 .kodi/
 .mozilla/
@@ -96,6 +97,7 @@ fontconfig/
 .config/*
 !.config/backup.conf
 !.config/feh/
+!.config/iguana/
 !.config/ipmagic/
 !.config/livestreamer/
 !.config/mpv/
@@ -104,6 +106,7 @@ fontconfig/
 !.config/pulse/default.pa
 !.config/taffybar/
 !.config/tpbattstat.conf
+!.config/vmpk.sourceforge.net/
 .cpan/
 .cpanm/
 .FBReader/
