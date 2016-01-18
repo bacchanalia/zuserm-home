@@ -54,6 +54,7 @@ librsvg2-bin
 libtext-csv-perl
 libtime-out-perl
 libtool
+libwxgtk3.0-dev
 libxslt1-dev
 lltag
 lshw
